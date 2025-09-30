@@ -10,5 +10,5 @@ __pycache__/
 .vscode/
 .idea/
 
+# Data Crap
 lichess_db_standard_rated_2013-01.csv
-
