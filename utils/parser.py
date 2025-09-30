@@ -24,9 +24,12 @@ def convert_to_csv(file_path: str):
         for num in range(1, 9):
             header += f"{letter}{num},"
 
+    # add target (selected move to end)
+    header += "selected_move\n"
+
     csv_name = file_path.split(".")[0] + ".csv"
     with open(csv_name, mode="w") as csv:
-        csv.write(f"{header}\n")
+        csv.write(f"{header}")
 
         current_game = chess.pgn.read_game(pgn)
 
@@ -38,16 +41,20 @@ def convert_to_csv(file_path: str):
 
             # loop through moves and save board states to csv
             for move in current_game.mainline_moves():
-                board.push(move)
-                row = convert_board_to_row(board.fen(), elo, is_black)
+                # convert current board to row
+                row = convert_board_to_row(board.fen(), elo, is_black, move.uci())
 
+                # save to csv
                 csv.write(row)
+
+                # move to next board
+                board.push(move)
                 is_black = not is_black  # toggle every move
 
             current_game = chess.pgn.read_game(pgn)
 
 
-def convert_board_to_row(fen: str, elo: tuple, is_black: bool) -> str:
+def convert_board_to_row(fen: str, elo: tuple, is_black: bool, move: str) -> str:
     """
     Converts a FEN string and game metadata into a CSV row.
 
@@ -58,6 +65,7 @@ def convert_board_to_row(fen: str, elo: tuple, is_black: bool) -> str:
         fen (str): FEN string representing the board state.
         elo (tuple): Tuple containing white and black ELO ratings.
         is_black (bool): True if the move was made by black, False otherwise.
+        move (str): UCI Chess notation for player selected move from current board state
 
     Returns:
         str: A CSV-formatted string representing the board state and metadata.
@@ -87,9 +95,7 @@ def convert_board_to_row(fen: str, elo: tuple, is_black: bool) -> str:
         else:
             board.append(piece_map.get(char, 0))
 
-    return (
-        f"{','.join(elo)},{int(is_black)},{','.join([str(piece) for piece in board])}\n"
-    )
+    return f"{','.join(elo)},{int(is_black)},{','.join([str(piece) for piece in board])}{move}\n"
 
 
 if __name__ == "__main__":
