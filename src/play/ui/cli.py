@@ -1,40 +1,52 @@
 import chess
 import time
+from pydantic import BaseModel
+from typing import Optional
+
+from src.play.game.game import Game
 from src.play.ui.ui import Ui
 from src.play.player.human_player import HumanPlayer
 
+# Pydantic Model for Configuration (CliConfig) remains the same
+class CliConfig(BaseModel):
+    """CLI configuration class."""
+    loop_interval: float = 0.1  # seconds between loop iterations
+
+
+# Derived CLI Class (now using Pydantic validation)
 class Cli(Ui):
     """Command-line interface for chess games with its own game loop."""
 
-    LOOP_INTERVAL = 0.1  # seconds between loop iterations
+    config: CliConfig
+    move_history: list[str]  # List of moves in SAN (Standard Algebraic Notation)
 
-    def __init__(self, game):
-        self.game = game
+    def __init__(self, game: Game, config: CliConfig = CliConfig()) -> None:
+        super().__init__(game)  # Initialize the parent class (Ui) with the game
+        self.config = config
         self.move_history = []
 
-    def run(self):
+    def run(self) -> None:
         """Start the CLI game loop, similar to GUI's after loop."""
         self._game_loop()
 
-    def reset_ui(self):
+    def reset_ui(self) -> None:
         self.move_history = []
         print("[UI RESET]\n")
 
-    def display_board(self):
+    def display_board(self) -> None:
         print(self.game.board, "\n")
 
-    def show_message(self, message):
+    def show_message(self, message: str) -> None:
         print(f"[MESSAGE] {message}")
 
-    def update_scores(self):
-        white_score, black_score = self.game.get_scores()
+    def update_scores(self, white_score: int, black_score: int) -> None:
         print(f"[SCORES] White: {white_score}  Black: {black_score}\n")
 
-    def update_move_list(self, move_san):
+    def update_move_list(self, move_san: str) -> None:
         self.move_history.append(move_san)
         print(f"[MOVE] {move_san}\n")
 
-    def prompt_move(self, player):
+    def _prompt_move(self, player: HumanPlayer) -> Optional[chess.Move]:
         """Prompt human player for a legal move."""
         legal_moves = list(self.game.board.legal_moves)
         while True:
@@ -47,7 +59,7 @@ class Cli(Ui):
             except Exception as e:
                 print(f"Invalid input: {e}")
 
-    def _game_loop(self):
+    def _game_loop(self) -> None:
         self.reset_ui()
         self.display_board()
 
@@ -56,7 +68,7 @@ class Cli(Ui):
 
             # Handle human vs bot
             if isinstance(current_player, HumanPlayer):
-                move = self.prompt_move(current_player)
+                move = self._prompt_move(current_player)
             else:
                 move = current_player.get_move(self.game.board)
 
@@ -64,7 +76,8 @@ class Cli(Ui):
                 move_san = self.game.apply_move(move)
                 self.update_move_list(move_san)
                 self.display_board()
-                self.update_scores()
+                white_score, black_score = self.game.get_scores()
+                self.update_scores(white_score, black_score)
 
             # Unified timer logic
             timeout_winner = self.game.update_timer()
@@ -73,7 +86,7 @@ class Cli(Ui):
                 print(f"Game Over: {timeout_winner.name} wins on time!")
                 break
 
-            time.sleep(self.LOOP_INTERVAL)
+            time.sleep(self.config.loop_interval)  # Using the loop_interval from config
 
         # Game over
         result = self.game.result()
