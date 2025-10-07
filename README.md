@@ -8,7 +8,7 @@ This project explores how to build **smaller, more human-like chess models** ins
 
 ### Goals:
 
-* **Reproduce MAIA-like performance using smaller models** (e.g., Stockfish-sized)
+* **Reproduce MAIA-like performance using smaller models** (e.g. Stockfish-sized)
 * Build a tabular dataset of real human chess games for training
 * Use interpretable models (e.g., Random Forests) as a baseline to study human-aligned move prediction
 
@@ -67,6 +67,8 @@ pip install -r requirements.txt
 > * `python-chess` (for PGN parsing)
 > * `zstandard` (for reading `.pgn.zst` files)
 > * `pandas`, `matplotlib`, `notebook` (for analysis & visualization)
+
+**Note**: If you're not using `pyenv`, you can install Python 3.11.4 manually, or use another version manager. You can also install dependencies directly with `pip` after installing Python.
 
 ### 📥 Step 2: Download a PGN File
 

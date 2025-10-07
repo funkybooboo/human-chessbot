@@ -184,7 +184,7 @@ class Gui(Ui):
         self.black_timer_label.config(text=f"{b_min:02}:{b_sec:02}")
 
         if timeout_winner:
-            self.game_over_label.config(text=f"Game Over: {timeout_winner.name} won on time!")
+            self.game_over_label.config(text=f"Game Over: {timeout_winner.config.name} won on time!")
             return True
         return False
 
@@ -277,12 +277,12 @@ class Gui(Ui):
             if winner:
                 winner.record_win()
                 loser.record_loss()
-                self.game_over_label.config(text=f"Game Over: {winner.name} won!")
+                self.game_over_label.config(text=f"Game Over: {winner.config.name} won!")
             else:
                 self.game_over_label.config(text="Game Over: Draw!")
 
-            self.white_stats.config(text=f"Wins: {self.game.white_player.wins}  Losses: {self.game.white_player.losses}")
-            self.black_stats.config(text=f"Wins: {self.game.black_player.wins}  Losses: {self.game.black_player.losses}")
+            self.white_stats.config(text=f"Wins: {self.game.white_player.config.wins}  Losses: {self.game.white_player.config.losses}")
+            self.black_stats.config(text=f"Wins: {self.game.black_player.config.wins}  Losses: {self.game.black_player.config.losses}")
             self.play_again_button.pack()
             self._save_game()
 

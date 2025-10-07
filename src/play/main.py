@@ -9,20 +9,13 @@ from src.play.ui.gui import Gui
 
 def main():
     if random.choice([True, False]):
-        lc0_config = Lc0BotPlayerConfig(name="Leela", color=True, time_limit=1.0)
-        white = Lc0BotPlayer(config=lc0_config)
-
-        stockfish_config = StockfishPlayerConfig(name="Stockfish", color=False, skill_level=10, time_limit=0.5)
-        black = StockfishPlayer(config=stockfish_config)
+        white = Lc0BotPlayer(config=Lc0BotPlayerConfig(name="Leela", color=True, time_limit=1.0))
+        black = StockfishPlayer(config=StockfishPlayerConfig(name="Stockfish", color=False, skill_level=10, time_limit=0.5))
     else:
-        stockfish_config = StockfishPlayerConfig(name="Stockfish", color=True, skill_level=10, time_limit=0.5)
-        white = StockfishPlayer(config=stockfish_config)
+        white = StockfishPlayer(config=StockfishPlayerConfig(name="Stockfish", color=True, skill_level=10, time_limit=0.5))
+        black = Lc0BotPlayer(config=Lc0BotPlayerConfig(name="Leela", color=False, time_limit=1.0))
 
-        lc0_config = Lc0BotPlayerConfig(name="Leela", color=False, time_limit=1.0)
-        black = Lc0BotPlayer(config=lc0_config)
-
-    game_config = GameConfig(save_dir="/home/nate/projects/cs6640_project/data/pgn", time_limit=600)
-    game = Game(white, black, config=game_config)
+    game = Game(white, black, config=GameConfig(save_dir="/home/nate/projects/cs6640_project/data/pgn", time_limit=600))
 
     ui = Gui(game)
     game.ui = ui
