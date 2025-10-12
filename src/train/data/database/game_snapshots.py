@@ -18,6 +18,7 @@ def create_game_snapshots_table():
     c.execute(f"""
     CREATE TABLE IF NOT EXISTS {_TABLE_NAME} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        raw_game_id INTEGER,
         move_number INTEGER,
         turn TEXT,
         move TEXT,
@@ -27,7 +28,8 @@ def create_game_snapshots_table():
         black_player TEXT,
         white_elo INTEGER,
         black_elo INTEGER,
-        result TEXT
+        result TEXT,
+        FOREIGN KEY(raw_game_id) REFERENCES raw_games(id)
     )
     """)
     conn.commit()
@@ -62,13 +64,14 @@ def save_snapshot(snapshot: GameSnapshot):
         board_values = tuple(snapshot.board)
         c.execute(f"""
         INSERT INTO {_TABLE_NAME} (
-            move_number, turn, move,
+            raw_game_id, move_number, turn, move,
             {', '.join([f'square_{i}' for i in range(64)])},
             board_hash, white_player, black_player, white_elo, black_elo, result
         ) VALUES (
-            ?, ?, ?, {', '.join(['?'] * 64)}, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, {', '.join(['?'] * 64)}, ?, ?, ?, ?, ?, ?
         )
         """, (
+            snapshot.raw_game_id,
             snapshot.move_number,
             snapshot.turn,
             snapshot.move,
@@ -102,16 +105,17 @@ def count_snapshots() -> int:
 
 def _row_to_snapshot(row: Tuple) -> GameSnapshot:
     """Convert a DB row to a GameSnapshot object."""
-    board = list(row[4:68])  # 64 squares
+    board = list(row[5:69])  # 64 squares
     return GameSnapshot(
-        move_number=row[1],
-        turn=row[2],
-        move=row[3],
+        raw_game_id=row[1],
+        move_number=row[2],
+        turn=row[3],
+        move=row[4],
         board=board,
-        board_hash=row[68],
-        white_player=row[69],
-        black_player=row[70],
-        white_elo=row[71],
-        black_elo=row[72],
-        result=row[73]
+        board_hash=row[69],
+        white_player=row[70],
+        black_player=row[71],
+        white_elo=row[72],
+        black_elo=row[73],
+        result=row[74]
     )

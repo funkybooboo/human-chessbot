@@ -1,7 +1,8 @@
 import requests
 import zstandard as zstd
 from src.train.data.database.files_metadata import fetch_files_metadata_under_size, mark_file_as_processed
-from src.train.data.dtos.raw_game import RawGame
+from src.train.data.database.raw_games import save_raw_game, raw_game_exists
+from src.train.data.models.raw_game import RawGame
 from typing import Iterator
 
 
@@ -9,14 +10,14 @@ def fetch_new_raw_games(max_files: int = 5, max_size_gb: float = 1) -> Iterator[
     """
     Generator that yields new RawGame objects from Lichess PGN files one by one.
     Prefers smaller files first to avoid memory spikes.
+
+    Each RawGame is saved to the database immediately, with processed=False.
+    Duplicates (by PGN hash) are skipped.
     """
     candidate_files = fetch_files_metadata_under_size(max_gb=max_size_gb)
 
-    # Filter out files already processed or already in the raw games DB
-    unprocessed_files = [
-        f for f in candidate_files
-        if not f.processed
-    ]
+    # Filter out files already processed or already fully downloaded
+    unprocessed_files = [f for f in candidate_files if not f.processed]
 
     # Sort by size (ascending) so smaller files are downloaded first
     unprocessed_files.sort(key=lambda f: f.size_gb)
@@ -42,9 +43,12 @@ def fetch_new_raw_games(max_files: int = 5, max_size_gb: float = 1) -> Iterator[
 
             decompressed_text = buffer.decode("utf-8")
 
-        # Yield each game individually
+        # Save all raw games to DB first, skipping duplicates
         for pgn in _split_pgn_text_into_games(decompressed_text):
-            yield RawGame(file_id=file_meta.id, pgn=pgn)
+            raw_game = RawGame(file_id=file_meta.id, pgn=pgn, processed=False)
+            if not raw_game_exists(raw_game.pgn_hash):
+                save_raw_game(raw_game)
+                yield raw_game
 
         mark_file_as_processed(file_meta)
 

@@ -3,6 +3,7 @@ from typing import Optional, List
 
 @dataclass
 class GameSnapshot:
+    raw_game_id: int
     move_number: int
     turn: str
     move: str

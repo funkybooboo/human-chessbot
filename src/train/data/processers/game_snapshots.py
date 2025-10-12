@@ -1,17 +1,16 @@
 import hashlib
-
 import chess
 import chess.pgn
 from io import StringIO
 from typing import Iterator, Optional, List
 
 from src.train.data.models.game_snapshot import GameSnapshot
-from src.train.data.dtos.raw_game import RawGame
+from src.train.data.models.raw_game import RawGame
 
 PIECE_TO_INT = {
-    'P': 1, 'N': 2, 'B': 3, 'R': 4, 'Q': 5, 'K': 6,  # white pieces
-    'p': -1, 'n': -2, 'b': -3, 'r': -4, 'q': -5, 'k': -6,  # black pieces
-    None: 0  # empty square
+    'P': 1, 'N': 2, 'B': 3, 'R': 4, 'Q': 5, 'K': 6,      # white pieces
+    'p': -1, 'n': -2, 'b': -3, 'r': -4, 'q': -5, 'k': -6, # black pieces
+    None: 0                                               # empty square
 }
 
 
@@ -20,7 +19,6 @@ def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
     Convert a RawGame into multiple GameSnapshot objects, one per move.
     Each snapshot has a unique hash to prevent duplicates.
     """
-
     pgn_io = StringIO(raw_game.pgn)
     game = chess.pgn.read_game(pgn_io)
     if game is None:
@@ -37,13 +35,14 @@ def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
 
     for move in game.mainline_moves():
         turn = 'w' if board.turn == chess.WHITE else 'b'
-        san_move = board.san(move)  # get SAN while move is still legal
-        board.push(move)  # now update the board
+        san_move = board.san(move)
+        board.push(move)
 
         board_array = [_piece_to_int(board.piece_at(i)) for i in range(64)]
         board_hash = _compute_board_hash(board_array, turn, san_move)
 
         yield GameSnapshot(
+            raw_game_id=raw_game.id,  # link back to raw game
             move_number=move_number,
             turn=turn,
             move=san_move,
@@ -60,14 +59,13 @@ def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
 
 
 def _compute_board_hash(board_array: List[int], turn: str, move: str) -> str:
-    """
-    Compute a SHA-256 hash of the board state, turn, and move.
-    """
+    """Compute a SHA-256 hash of the board state, turn, and move."""
     data = f"{board_array}-{turn}-{move}".encode("utf-8")
     return hashlib.sha256(data).hexdigest()
 
 
 def _safe_int(val: Optional[str]) -> Optional[int]:
+    """Convert a string to int, return None if conversion fails."""
     try:
         return int(val)
     except (TypeError, ValueError):
@@ -75,6 +73,7 @@ def _safe_int(val: Optional[str]) -> Optional[int]:
 
 
 def _piece_to_int(piece: Optional[chess.Piece]) -> int:
+    """Convert a chess piece to its integer representation."""
     if piece is None:
         return 0
     return PIECE_TO_INT[piece.symbol()]
