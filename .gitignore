@@ -1,4 +1,5 @@
 data/
+papers/
 .env
 
 # Python Junk
@@ -9,3 +10,6 @@ __pycache__/
 .code/
 .vscode/
 .idea/
+*.lock
+images/
+games/
