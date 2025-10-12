@@ -3,15 +3,11 @@ from typing import Optional
 import hashlib
 
 @dataclass
-class Game:
+class RawGame:
     id: Optional[int] = None  # DB primary key
     file_id: Optional[int] = None  # Foreign key to file_metadata
     pgn: str = ""
     pgn_hash: str = field(init=False)  # automatically computed from pgn
-    white: Optional[str] = None
-    black: Optional[str] = None
-    result: Optional[str] = None
-    date: Optional[str] = None
 
     def __post_init__(self):
         # Compute SHA-256 hash of the PGN
