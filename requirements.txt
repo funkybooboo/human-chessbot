@@ -112,22 +112,5 @@ webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.8.0
 widgetsnbextension==4.0.14
-
-pydantic
-pillow
-# Chess PGN parsing and board utilities
-chess==1.11.2
-
-# Data handling and analysis
-pandas==2.2.2
-
-# Plotting (for model evaluation or ELO distributions)
-matplotlib==3.8.4
-
-# For working with notebooks (if using Jupyter)
-notebook==7.1.2
-ipython==8.24.0
-
-# For decompressing .zst (Zstandard) files
 zstandard==0.22.0
-
+pydantic
