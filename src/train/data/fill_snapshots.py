@@ -46,7 +46,8 @@ def fill_database_with_snapshots(
             for snapshot in raw_game_to_snapshots(game):
                 save_snapshot(snapshot)
 
-                if count_snapshots() % print_interval == 0:
+                snapshot_count = count_snapshots()
+                if snapshot_count % print_interval == 0:
                     print(f"{snapshot_count} snapshots saved...")
 
             mark_raw_game_as_processed(game)
