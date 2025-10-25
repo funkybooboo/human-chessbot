@@ -1,139 +1,170 @@
-# ♟️ The Human-like Chess Bot
+# The Human Chess Bot
 
-## 📌 Project Summary
+A comprehensive chess application suite featuring multiple chess engines, data conversion tools, and machine learning training utilities.
 
-Traditional chess bots (CB) like Stockfish and AlphaZero dominate human players (HP), but their gameplay lacks human-like intuition and heuristic-driven decision-making. While these CBs are excellent at playing perfect chess, they are not ideal training partners for human players seeking to improve against other humans.
+## Features
 
-This project explores how to build **smaller, more human-like chess models** inspired by [MAIA](https://www.maiachess.com/), a bot trained to predict human moves rather than just win. MAIA uses supervised learning to mimic human decision-making rather than brute-force search or reinforcement learning.
+- Interactive chess game with GUI and CLI interfaces
+- Multiple chess engines (Stockfish, LCZero, Random bot)
+- PGN file conversion and processing utilities
+- Time controls and game recording
+- Comprehensive test coverage (101 tests, 100% passing)
 
-### Goals:
+## Quick Start
 
-* **Reproduce MAIA-like performance using smaller models** (e.g. Stockfish-sized)
-* Build a tabular dataset of real human chess games for training
-* Use interpretable models (e.g., Random Forests) as a baseline to study human-aligned move prediction
-
----
-
-## 📁 Project Structure
-
-```text
-cs6640_project/
-├── data/
-│   ├── csv/                   # Processed datasets in CSV format
-│   └── pgn/                   # Raw PGN files from Lichess
-├── docs/
-│   └── papers/                # Research papers and documentation
-├── src/
-│   ├── pgn_to_csv.py          # PGN to CSV parser script
-│   └── random_forest.ipynb    # ML model baseline (e.g. Random Forest)
-├── requirements.txt           # Python dependencies
-└── README.md                  # Project documentation (this file)
-```
-
----
-
-## 📦 Dataset
-
-We use the **[Lichess Database](https://database.lichess.org/)**, a public archive of millions of chess games played online. Each game is stored in PGN format and contains:
-
-* Player ELO ratings
-* Full move list
-* Game outcome
-* Metadata like time control
-
-For our model, we extract the following features **per move**:
-
-* `white_elo`, `black_elo`
-* `blacks_move` (boolean)
-* 64 board squares encoded as integers (from A1 to H8)
-* `selected_move` (target label in UCI format)
-
----
-
-## 🔄 How to Run the PGN to CSV Parser
-
-### ✅ Step 1: Install Dependencies
-
-Install required Python packages:
+### Installation
 
 ```bash
-pyenv install 3.11.4  # or latest 3.11.x version
-pyenv global 3.11.4
-pip install -r requirements.txt
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/the_human_chess_bot.git
+cd the_human_chess_bot
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install the project with dev dependencies
+pip install -e ".[dev]"
+
+# Install pre-commit hooks
+pre-commit install
 ```
 
-> This installs:
->
-> * `python-chess` (for PGN parsing)
-> * `zstandard` (for reading `.pgn.zst` files)
-> * `pandas`, `matplotlib`, `notebook` (for analysis & visualization)
-
-**Note**: If you're not using `pyenv`, you can install Python 3.11.4 manually, or use another version manager. You can also install dependencies directly with `pip` after installing Python.
-
-### 📥 Step 2: Download a PGN File
-
-Download a `.pgn.zst` file from the [Lichess Database](https://database.lichess.org/).
-
-**No need to decompress it manually** — the parser will handle `.zst` files automatically.
-
-For example:
+### Running the Chess Application
 
 ```bash
-wget https://database.lichess.org/standard/lichess_db_standard_rated_2013-01.pgn.zst -P data/pgn/
+# GUI (default)
+python -m packages.play.src.main
+
+# CLI
+python -m packages.play.src.main --ui cli
+
+# With custom settings
+python -m packages.play.src.main --time-limit 300 --save-dir ~/my_games
 ```
 
-### ▶️ Step 3: Run the Parser
+## Project Structure
 
-From the root directory:
+```
+the_human_chess_bot/
+├── packages/
+│   ├── play/          # Chess game application
+│   ├── convert/       # Data conversion utilities
+│   └── train/         # ML training tools (planned)
+├── docs/              # Project-wide documentation
+├── pyproject.toml     # Project configuration
+└── README.md
+```
+
+## Packages
+
+### Play Package
+Interactive chess application with multiple engines and dual interfaces.
+- 73 tests, 100% passing
+- [Documentation](packages/play/README.md)
+
+### Convert Package
+Data conversion utilities for chess formats (PGN to CSV, file combination).
+- 28 tests, 100% passing
+- [Documentation](packages/convert/README.md)
+
+### Train Package (Coming Soon)
+Machine learning training pipeline for chess AI.
+- [Documentation](packages/train/README.md)
+
+## Development
+
+### Running Tests
 
 ```bash
-python src/pgn_to_csv.py data/pgn/lichess_db_standard_rated_2013-01.pgn.zst data/csv/lichess_2013-01.csv
+# All tests
+pytest packages/*/tests/ -v
+
+# Specific package
+pytest packages/play/tests/ -v
+pytest packages/convert/tests/ -v
+
+# With coverage
+pytest packages/*/tests/ --cov=packages --cov-report=html
 ```
 
-This will:
+### Pre-commit Hooks
 
-* Read each game in the PGN (compressed or uncompressed)
-* Extract board states after every move
-* Save the result as a CSV to the given path
+The project uses pre-commit hooks to ensure code quality before commits:
 
-### 📄 Example Output (CSV row)
+```bash
+# Install pre-commit hooks
+pip install pre-commit
+pre-commit install
 
-```csv
-white_elo,black_elo,blacks_move,A1,A2,...,H8,selected_move
-1500,1450,0,4,2,3,5,6,...,0,e2e4
+# Hooks will now run automatically on git commit
+# To run manually:
+pre-commit run --all-files
 ```
 
----
+**Included hooks**:
+- **ruff**: Fast Python linter with auto-fix
+- **ruff-format**: Fast Python formatter
+- **black**: Code formatter
+- **isort**: Import sorter
+- **mypy**: Type checker
+- **trailing-whitespace**: Remove trailing whitespace
+- **end-of-file-fixer**: Ensure files end with newline
+- **check-yaml/json/toml**: Validate config files
+- **check-merge-conflict**: Detect merge conflicts
+- **debug-statements**: Detect debug statements
 
-## 🧠 Project Goals
+### Manual Code Quality Checks
 
-* Train human-aligned models on real human data
-* Compare model size vs accuracy trade-offs
-* Improve the learning experience for human players
-* Evaluate generalization to unseen board states
+```bash
+# Format code
+black packages/
+isort packages/
+ruff format packages/
 
----
+# Lint
+ruff check packages/
 
-## 📚 References
+# Type check
+mypy packages/ --ignore-missing-imports
 
-* **MAIA Research Paper (University of Toronto)**
-  [https://www.cs.toronto.edu/~ashton/pubs/maia-kdd2020.pdf](https://www.cs.toronto.edu/~ashton/pubs/maia-kdd2020.pdf)
+# Run all checks manually
+pre-commit run --all-files
 
-* **MAIA-2 Preprint (2024)**
-  [https://arxiv.org/abs/2409.20553](https://arxiv.org/abs/2409.20553)
+# Run tests
+pytest packages/*/tests/ -v
+```
 
-* **AlphaZero (DeepMind, 2018)**
-  [https://doi.org/10.1126/science.aar6404](https://doi.org/10.1126/science.aar6404)
+## Requirements
 
-* **Stockfish vs Leela Chess Zero**
-  [https://webdocs.cs.ualberta.ca/~mmueller/ps/2023/ACG_2023_Stockfish.pdf](https://webdocs.cs.ualberta.ca/~mmueller/ps/2023/ACG_2023_Stockfish.pdf)
+- Python 3.11 or higher
+- Dependencies listed in `pyproject.toml`
+- Optional: Stockfish and/or LCZero chess engines
 
----
+## Contributing
 
-## 👥 Contributors
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Install pre-commit hooks (`pre-commit install`)
+4. Make your changes
+5. Run tests (`pytest packages/*/tests/ -v`)
+6. Commit your changes (pre-commit hooks will run automatically)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
-* **Ethan Gee**
-* **Nate Stott**
+### Contribution Guidelines
 
-For CS6640 – Machine Learning
-Utah State University
+- Write tests for new features (maintain >90% coverage)
+- Follow existing code style (Black, isort, ruff)
+- Update documentation as needed
+- Ensure pre-commit hooks pass before committing
+- All tests must pass
+
+## Documentation
+
+- [Play Package Documentation](packages/play/README.md)
+- [Convert Package Documentation](packages/convert/README.md)
+
+## License
+
+This project is part of the Human Chess Bot suite.
