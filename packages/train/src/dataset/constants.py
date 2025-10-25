@@ -1,5 +1,10 @@
 """Constants and configuration values for the dataset module."""
 
+from pathlib import Path
+
+# Database configuration
+DB_FILE = str(Path(__file__).parent.parent.parent.parent / "database.sqlite3")
+
 # Default thresholds for data fetching
 DEFAULT_SNAPSHOTS_THRESHOLD = 10_000
 DEFAULT_MAX_SIZE_GB = 10.0

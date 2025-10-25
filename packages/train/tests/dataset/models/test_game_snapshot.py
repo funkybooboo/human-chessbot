@@ -8,13 +8,13 @@ class TestGameSnapshot:
 
     def test_creation_minimal(self):
         """Test creating GameSnapshot with all required fields."""
-        board = [0] * 64
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         snapshot = GameSnapshot(
             raw_game_id=1,
             move_number=1,
             turn="w",
             move="e4",
-            board=board,
+            fen=fen,
             board_hash="abc123",
             white_player="Player1",
             black_player="Player2",
@@ -26,7 +26,7 @@ class TestGameSnapshot:
         assert snapshot.move_number == 1
         assert snapshot.turn == "w"
         assert snapshot.move == "e4"
-        assert len(snapshot.board) == 64
+        assert snapshot.fen == fen
         assert snapshot.board_hash == "abc123"
         assert snapshot.white_player == "Player1"
         assert snapshot.black_player == "Player2"
@@ -36,13 +36,13 @@ class TestGameSnapshot:
 
     def test_creation_with_none_elo(self):
         """Test creating GameSnapshot with None ELO values."""
-        board = [0] * 64
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         snapshot = GameSnapshot(
             raw_game_id=1,
             move_number=1,
             turn="w",
             move="e4",
-            board=board,
+            fen=fen,
             board_hash="abc123",
             white_player="Player1",
             black_player="Player2",
@@ -53,16 +53,16 @@ class TestGameSnapshot:
         assert snapshot.white_elo is None
         assert snapshot.black_elo is None
 
-    def test_board_with_pieces(self):
-        """Test creating GameSnapshot with actual piece positions."""
-        # Starting position for white pieces on first rank
-        board = [4, 2, 3, 5, 6, 3, 2, 4] + [1] * 8 + [0] * 48
+    def test_fen_string(self):
+        """Test creating GameSnapshot with different FEN positions."""
+        # After 1. e4
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         snapshot = GameSnapshot(
             raw_game_id=1,
             move_number=1,
             turn="w",
             move="e4",
-            board=board,
+            fen=fen,
             board_hash="hash1",
             white_player="Player1",
             black_player="Player2",
@@ -70,19 +70,18 @@ class TestGameSnapshot:
             black_elo=1500,
             result="1-0",
         )
-        assert snapshot.board[0] == 4  # Rook
-        assert snapshot.board[1] == 2  # Knight
-        assert snapshot.board[8] == 1  # Pawn
+        assert snapshot.fen == fen
+        assert "rnbqkbnr" in snapshot.fen
 
     def test_equality(self):
         """Test GameSnapshot equality comparison."""
-        board = [0] * 64
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         s1 = GameSnapshot(
             raw_game_id=1,
             move_number=1,
             turn="w",
             move="e4",
-            board=board,
+            fen=fen,
             board_hash="abc123",
             white_player="Player1",
             black_player="Player2",
@@ -95,7 +94,7 @@ class TestGameSnapshot:
             move_number=1,
             turn="w",
             move="e4",
-            board=board,
+            fen=fen,
             board_hash="abc123",
             white_player="Player1",
             black_player="Player2",
@@ -107,13 +106,14 @@ class TestGameSnapshot:
 
     def test_inequality_different_move(self):
         """Test GameSnapshot inequality with different moves."""
-        board = [0] * 64
+        fen1 = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        fen2 = "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"
         s1 = GameSnapshot(
             raw_game_id=1,
             move_number=1,
             turn="w",
             move="e4",
-            board=board,
+            fen=fen1,
             board_hash="hash1",
             white_player="P1",
             black_player="P2",
@@ -126,7 +126,7 @@ class TestGameSnapshot:
             move_number=1,
             turn="w",
             move="d4",
-            board=board,
+            fen=fen2,
             board_hash="hash2",
             white_player="P1",
             black_player="P2",
@@ -138,13 +138,13 @@ class TestGameSnapshot:
 
     def test_black_turn(self):
         """Test GameSnapshot with black's turn."""
-        board = [0] * 64
+        fen = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2"
         snapshot = GameSnapshot(
             raw_game_id=1,
             move_number=2,
             turn="b",
             move="e5",
-            board=board,
+            fen=fen,
             board_hash="hash1",
             white_player="P1",
             black_player="P2",
@@ -157,7 +157,7 @@ class TestGameSnapshot:
 
     def test_different_results(self):
         """Test GameSnapshot with different game results."""
-        board = [0] * 64
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         results = ["1-0", "0-1", "1/2-1/2", "*"]
 
         for result in results:
@@ -166,7 +166,7 @@ class TestGameSnapshot:
                 move_number=1,
                 turn="w",
                 move="e4",
-                board=board,
+                fen=fen,
                 board_hash="hash1",
                 white_player="P1",
                 black_player="P2",
@@ -178,13 +178,13 @@ class TestGameSnapshot:
 
     def test_high_elo_ratings(self):
         """Test GameSnapshot with high ELO ratings."""
-        board = [0] * 64
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         snapshot = GameSnapshot(
             raw_game_id=1,
             move_number=1,
             turn="w",
             move="e4",
-            board=board,
+            fen=fen,
             board_hash="hash1",
             white_player="Magnus",
             black_player="Hikaru",
@@ -197,13 +197,13 @@ class TestGameSnapshot:
 
     def test_low_elo_ratings(self):
         """Test GameSnapshot with low ELO ratings."""
-        board = [0] * 64
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         snapshot = GameSnapshot(
             raw_game_id=1,
             move_number=1,
             turn="w",
             move="e4",
-            board=board,
+            fen=fen,
             board_hash="hash1",
             white_player="Beginner1",
             black_player="Beginner2",
@@ -216,13 +216,13 @@ class TestGameSnapshot:
 
     def test_late_game_move(self):
         """Test GameSnapshot with high move number."""
-        board = [0] * 64
+        fen = "8/6k1/8/8/8/8/6K1/8 w - - 0 75"
         snapshot = GameSnapshot(
             raw_game_id=1,
             move_number=75,
             turn="w",
             move="Kg3",
-            board=board,
+            fen=fen,
             board_hash="hash1",
             white_player="P1",
             black_player="P2",
@@ -234,7 +234,7 @@ class TestGameSnapshot:
 
     def test_complex_move_notation(self):
         """Test GameSnapshot with complex SAN notation."""
-        board = [0] * 64
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         moves = ["e4", "Nf3", "Bb5", "O-O", "Qe2+", "Rxd8#", "exd5"]
 
         for move in moves:
@@ -243,7 +243,7 @@ class TestGameSnapshot:
                 move_number=1,
                 turn="w",
                 move=move,
-                board=board,
+                fen=fen,
                 board_hash=f"hash_{move}",
                 white_player="P1",
                 black_player="P2",
@@ -253,34 +253,15 @@ class TestGameSnapshot:
             )
             assert snapshot.move == move
 
-    def test_negative_piece_values(self):
-        """Test GameSnapshot with negative piece values (black pieces)."""
-        board = [-4, -2, -3, -5, -6, -3, -2, -4] + [-1] * 8 + [0] * 48
-        snapshot = GameSnapshot(
-            raw_game_id=1,
-            move_number=1,
-            turn="b",
-            move="e5",
-            board=board,
-            board_hash="hash1",
-            white_player="P1",
-            black_player="P2",
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
-        )
-        assert snapshot.board[0] == -4  # Black rook
-        assert snapshot.board[4] == -6  # Black king
-
     def test_mixed_elo_availability(self):
         """Test GameSnapshot with one ELO missing."""
-        board = [0] * 64
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         snapshot = GameSnapshot(
             raw_game_id=1,
             move_number=1,
             turn="w",
             move="e4",
-            board=board,
+            fen=fen,
             board_hash="hash1",
             white_player="P1",
             black_player="P2",
@@ -293,13 +274,13 @@ class TestGameSnapshot:
 
     def test_repr(self):
         """Test string representation of GameSnapshot."""
-        board = [0] * 64
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         snapshot = GameSnapshot(
             raw_game_id=1,
             move_number=1,
             turn="w",
             move="e4",
-            board=board,
+            fen=fen,
             board_hash="hash1",
             white_player="P1",
             black_player="P2",
@@ -310,34 +291,15 @@ class TestGameSnapshot:
         repr_str = repr(snapshot)
         assert "GameSnapshot" in repr_str
 
-    def test_board_mutability(self):
-        """Test that board list can be modified."""
-        board = [0] * 64
-        snapshot = GameSnapshot(
-            raw_game_id=1,
-            move_number=1,
-            turn="w",
-            move="e4",
-            board=board,
-            board_hash="hash1",
-            white_player="P1",
-            black_player="P2",
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
-        )
-        snapshot.board[0] = 4  # Place a rook
-        assert snapshot.board[0] == 4
-
     def test_special_characters_in_player_names(self):
         """Test GameSnapshot with special characters in player names."""
-        board = [0] * 64
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
         snapshot = GameSnapshot(
             raw_game_id=1,
             move_number=1,
             turn="w",
             move="e4",
-            board=board,
+            fen=fen,
             board_hash="hash1",
             white_player="Player_123",
             black_player="Player-456",

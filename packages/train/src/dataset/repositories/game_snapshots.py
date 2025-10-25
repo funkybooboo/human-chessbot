@@ -1,8 +1,8 @@
 import sqlite3
 from collections.abc import Iterable
 
+from packages.train.src.dataset.constants import DB_FILE
 from packages.train.src.dataset.models.game_snapshot import GameSnapshot
-from packages.train.src.dataset.repositories.config import DB_FILE
 
 _TABLE_NAME = "game_snapshots"
 
@@ -12,9 +12,6 @@ def create_game_snapshots_table():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
-    # 64 board columns + metadata + unique hash
-    board_columns = ",\n".join([f"square_{i} INTEGER" for i in range(64)])
-
     c.execute(
         f"""
     CREATE TABLE IF NOT EXISTS {_TABLE_NAME} (
@@ -23,7 +20,7 @@ def create_game_snapshots_table():
         move_number INTEGER,
         turn TEXT,
         move TEXT,
-        {board_columns},
+        fen TEXT,
         board_hash TEXT NOT NULL UNIQUE,
         white_player TEXT,
         black_player TEXT,
@@ -65,15 +62,13 @@ def save_snapshot(snapshot: GameSnapshot):
             return
 
         # Insert
-        board_values = tuple(snapshot.board)
         c.execute(
             f"""
         INSERT INTO {_TABLE_NAME} (
-            raw_game_id, move_number, turn, move,
-            {', '.join([f'square_{i}' for i in range(64)])},
+            raw_game_id, move_number, turn, move, fen,
             board_hash, white_player, black_player, white_elo, black_elo, result
         ) VALUES (
-            ?, ?, ?, ?, {', '.join(['?'] * 64)}, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )
         """,
             (
@@ -81,7 +76,7 @@ def save_snapshot(snapshot: GameSnapshot):
                 snapshot.move_number,
                 snapshot.turn,
                 snapshot.move,
-                *board_values,
+                snapshot.fen,
                 snapshot.board_hash,
                 snapshot.white_player,
                 snapshot.black_player,
@@ -113,17 +108,16 @@ def count_snapshots() -> int:
 
 def _row_to_snapshot(row: tuple) -> GameSnapshot:
     """Convert a DB row to a GameSnapshot object."""
-    board = list(row[5:69])  # 64 squares
     return GameSnapshot(
         raw_game_id=row[1],
         move_number=row[2],
         turn=row[3],
         move=row[4],
-        board=board,
-        board_hash=row[69],
-        white_player=row[70],
-        black_player=row[71],
-        white_elo=row[72],
-        black_elo=row[73],
-        result=row[74],
+        fen=row[5],
+        board_hash=row[6],
+        white_player=row[7],
+        black_player=row[8],
+        white_elo=row[9],
+        black_elo=row[10],
+        result=row[11],
     )

@@ -237,7 +237,9 @@ class TestPlotEloDistribution:
             plot_elo_distribution("dummy.db", bins=100, show=False)
 
         # Should pass bins parameter with min/max values to compute_histograms
-        mock_compute.assert_called_once_with("dummy.db", bin_size=100, min_val=600, max_val=1900)
+        mock_compute.assert_called_once_with(
+            db_path="dummy.db", bin_size=100, min_val=600, max_val=1900
+        )
 
     @patch("packages.train.src.dataset.plotter.plt")
     @patch("packages.train.src.dataset.plotter.compute_histograms")

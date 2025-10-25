@@ -7,8 +7,8 @@ class GameSnapshot:
     move_number: int
     turn: str
     move: str
-    board: list[int]  # 64 integers
-    board_hash: str  # hash of board + turn + move
+    fen: str  # FEN string representation of the board
+    board_hash: str  # hash of fen + turn + move
     white_player: str
     black_player: str
     white_elo: int | None

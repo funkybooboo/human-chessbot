@@ -4,14 +4,14 @@ import sqlite3
 
 from matplotlib import pyplot as plt
 
-from packages.train.src.dataset.constants import MAX_ELO, MIN_ELO
+from packages.train.src.dataset.constants import DB_FILE, MAX_ELO, MIN_ELO
 from packages.train.src.dataset.logger import get_logger
 
 logger = get_logger("plotter")
 
 
 def compute_histograms(
-    db_path: str,
+    db_path: str = DB_FILE,
     bin_size: int = 50,
     min_val: int | None = MIN_ELO,
     max_val: int | None = MAX_ELO,
@@ -23,7 +23,7 @@ def compute_histograms(
     to 50-point bins covering 600..1900.
 
     Args:
-        db_path: Path to the sqlite database file.
+        db_path: Path to the SQLite database file.
         bin_size: Width of each bin (e.g. 50 for 50-point Elo bins).
         min_val: Minimum Elo to include (inclusive).
         max_val: Maximum Elo to include (exclusive upper edge).
@@ -94,7 +94,7 @@ def compute_histograms(
 
 
 def plot_elo_distribution(
-    db_path: str,
+    db_path: str = DB_FILE,
     bins: int = 50,
     show: bool = True,
     save_path: str | None = None,
@@ -103,9 +103,15 @@ def plot_elo_distribution(
 
     This function delegates to `compute_histograms` so it never needs to hold all
     Elo values in Python memory.
+
+    Args:
+        db_path: Path to the SQLite database file.
+        bins: Bin width in Elo points.
+        show: Whether to display the plot.
+        save_path: Path to save the plot image (optional).
     """
     white_counts, black_counts, bin_edges = compute_histograms(
-        db_path, bin_size=bins, min_val=600, max_val=1900
+        db_path=db_path, bin_size=bins, min_val=600, max_val=1900
     )
 
     # compute bin centers and width
@@ -152,7 +158,6 @@ def plot_elo_distribution(
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Plot Elo distributions from the database")
-    p.add_argument("db", default="./database.sqlite3", help="Path to sqlite database")
     p.add_argument(
         "-b", "--bins", type=int, default=50, help="Bin width in Elo points (default 50)"
     )
@@ -173,4 +178,4 @@ def _parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = _parse_args()
-    plot_elo_distribution(args.db, bins=args.bins, show=args.show, save_path=args.output)
+    plot_elo_distribution(db_path=DB_FILE, bins=args.bins, show=args.show, save_path=args.output)

@@ -14,7 +14,7 @@ def temp_db(tmp_path):
     """Create a temporary database for testing."""
     db_path = tmp_path / "test.db"
     with (
-        patch("packages.train.src.dataset.repositories.config.DB_FILE", str(db_path)),
+        patch("packages.train.src.dataset.repositories.db_utils.DB_FILE", str(db_path)),
         patch("packages.train.src.dataset.repositories.database.DB_FILE", str(db_path)),
         patch("packages.train.src.dataset.repositories.raw_games.DB_FILE", str(db_path)),
         patch("packages.train.src.dataset.repositories.files_metadata.DB_FILE", str(db_path)),

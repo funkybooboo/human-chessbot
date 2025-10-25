@@ -5,7 +5,6 @@ from io import StringIO
 import chess
 import chess.pgn
 
-from packages.train.src.dataset.constants import BOARD_SIZE, PIECE_TO_INT
 from packages.train.src.dataset.models.game_snapshot import GameSnapshot
 from packages.train.src.dataset.models.raw_game import RawGame
 
@@ -34,15 +33,15 @@ def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
         san_move = board.san(move)
         board.push(move)
 
-        board_array = [_piece_to_int(board.piece_at(i)) for i in range(BOARD_SIZE)]
-        board_hash = _compute_board_hash(board_array, turn, san_move)
+        fen = board.fen()
+        board_hash = _compute_board_hash(fen, turn, san_move)
 
         yield GameSnapshot(
             raw_game_id=raw_game.id if raw_game.id is not None else 0,  # link back to raw game
             move_number=move_number,
             turn=turn,
             move=san_move,
-            board=board_array,
+            fen=fen,
             board_hash=board_hash,
             white_player=white_player,
             black_player=black_player,
@@ -54,9 +53,9 @@ def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
         move_number += 1
 
 
-def _compute_board_hash(board_array: list[int], turn: str, move: str) -> str:
-    """Compute a SHA-256 hash of the board state, turn, and move."""
-    data = f"{board_array}-{turn}-{move}".encode()
+def _compute_board_hash(fen: str, turn: str, move: str) -> str:
+    """Compute a SHA-256 hash of the FEN, turn, and move."""
+    data = f"{fen}-{turn}-{move}".encode()
     return hashlib.sha256(data).hexdigest()
 
 
@@ -68,10 +67,3 @@ def _safe_int(val: str | None) -> int | None:
         return int(val)
     except (TypeError, ValueError):
         return None
-
-
-def _piece_to_int(piece: chess.Piece | None) -> int:
-    """Convert a chess piece to its integer representation."""
-    if piece is None:
-        return 0
-    return PIECE_TO_INT[piece.symbol()]

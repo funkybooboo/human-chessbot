@@ -86,7 +86,7 @@ class TestFillDatabaseWithSnapshots:
             move_number=1,
             turn="w",
             move="e4",
-            board=[0] * 64,
+            fen="rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
             board_hash="hash1",
             white_player="P1",
             black_player="P2",

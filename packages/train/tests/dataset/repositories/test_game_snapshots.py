@@ -14,7 +14,7 @@ def temp_db(tmp_path):
     """Create a temporary database for testing."""
     db_path = tmp_path / "test.db"
     with (
-        patch("packages.train.src.dataset.repositories.config.DB_FILE", str(db_path)),
+        patch("packages.train.src.dataset.repositories.db_utils.DB_FILE", str(db_path)),
         patch("packages.train.src.dataset.repositories.database.DB_FILE", str(db_path)),
         patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", str(db_path)),
         patch("packages.train.src.dataset.repositories.files_metadata.DB_FILE", str(db_path)),
@@ -40,16 +40,19 @@ class TestGameSnapshotsTable:
         assert cursor.fetchone() is not None
         conn.close()
 
-    def test_table_has_64_square_columns(self, temp_db):
-        """Test that table has all 64 square columns."""
+    def test_table_has_fen_column(self, temp_db):
+        """Test that table has fen column instead of 64 square columns."""
         conn = sqlite3.connect(temp_db)
         cursor = conn.cursor()
         cursor.execute("PRAGMA table_info(game_snapshots)")
         columns = cursor.fetchall()
         conn.close()
 
-        square_columns = [col for col in columns if col[1].startswith("square_")]
-        assert len(square_columns) == 64
+        column_names = [col[1] for col in columns]
+        assert "fen" in column_names
+        # Ensure we don't have old square_ columns
+        square_columns = [col for col in column_names if col.startswith("square_")]
+        assert len(square_columns) == 0
 
     def test_table_exists(self, temp_db):
         """Test checking if table exists."""
@@ -59,13 +62,13 @@ class TestGameSnapshotsTable:
     def test_save_snapshot(self, temp_db):
         """Test saving a single snapshot."""
         with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            board = [0] * 64
+            fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
             snapshot = GameSnapshot(
                 raw_game_id=1,
                 move_number=1,
                 turn="w",
                 move="e4",
-                board=board,
+                fen=fen,
                 board_hash="hash1",
                 white_player="P1",
                 black_player="P2",
@@ -83,17 +86,18 @@ class TestGameSnapshotsTable:
 
             assert row is not None
             assert row[4] == "e4"  # move
+            assert row[5] == fen  # fen
 
     def test_save_snapshot_duplicate(self, temp_db):
         """Test that duplicate board hashes are not inserted."""
         with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            board = [0] * 64
+            fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
             snapshot1 = GameSnapshot(
                 raw_game_id=1,
                 move_number=1,
                 turn="w",
                 move="e4",
-                board=board,
+                fen=fen,
                 board_hash="hash1",
                 white_player="P1",
                 black_player="P2",
@@ -106,7 +110,7 @@ class TestGameSnapshotsTable:
                 move_number=1,
                 turn="w",
                 move="e4",
-                board=board,
+                fen=fen,
                 board_hash="hash1",
                 white_player="P1",
                 black_player="P2",
@@ -129,14 +133,14 @@ class TestGameSnapshotsTable:
     def test_save_multiple_snapshots(self, temp_db):
         """Test saving multiple snapshots."""
         with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            board = [0] * 64
+            fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
             snapshots = [
                 GameSnapshot(
                     raw_game_id=1,
                     move_number=i,
                     turn="w",
                     move=f"move{i}",
-                    board=board,
+                    fen=fen,
                     board_hash=f"hash{i}",
                     white_player="P1",
                     black_player="P2",
@@ -159,14 +163,14 @@ class TestGameSnapshotsTable:
     def test_count_snapshots(self, temp_db):
         """Test counting snapshots in the database."""
         with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            board = [0] * 64
+            fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
             snapshots = [
                 GameSnapshot(
                     raw_game_id=1,
                     move_number=i,
                     turn="w",
                     move=f"move{i}",
-                    board=board,
+                    fen=fen,
                     board_hash=f"hash{i}",
                     white_player="P1",
                     black_player="P2",
@@ -187,17 +191,20 @@ class TestGameSnapshotsTable:
             count = game_snapshots.count_snapshots()
             assert count == 0
 
-    def test_save_snapshot_with_pieces(self, temp_db):
-        """Test saving a snapshot with actual piece positions."""
+    def test_save_snapshot_different_fen_positions(self, temp_db):
+        """Test saving snapshots with different FEN positions."""
         with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            # Starting position
-            board = [4, 2, 3, 5, 6, 3, 2, 4] + [1] * 8 + [0] * 48
-            snapshot = GameSnapshot(
+            # Starting position after 1. e4
+            fen1 = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+            # After 1. e4 e5
+            fen2 = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2"
+
+            snapshot1 = GameSnapshot(
                 raw_game_id=1,
                 move_number=1,
                 turn="w",
                 move="e4",
-                board=board,
+                fen=fen1,
                 board_hash="hash1",
                 white_player="P1",
                 black_player="P2",
@@ -205,62 +212,45 @@ class TestGameSnapshotsTable:
                 black_elo=1500,
                 result="1-0",
             )
-            game_snapshots.save_snapshot(snapshot)
-
-            # Verify board was saved correctly
-            conn = sqlite3.connect(temp_db)
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT square_0, square_1, square_8 FROM game_snapshots WHERE board_hash = ?",
-                ("hash1",),
-            )
-            row = cursor.fetchone()
-            conn.close()
-
-            assert row[0] == 4  # Rook
-            assert row[1] == 2  # Knight
-            assert row[2] == 1  # Pawn
-
-    def test_save_snapshot_with_negative_pieces(self, temp_db):
-        """Test saving a snapshot with black pieces (negative values)."""
-        with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            board = [-4, -2, -3, -5, -6, -3, -2, -4] + [-1] * 8 + [0] * 48
-            snapshot = GameSnapshot(
+            snapshot2 = GameSnapshot(
                 raw_game_id=1,
-                move_number=1,
+                move_number=2,
                 turn="b",
                 move="e5",
-                board=board,
-                board_hash="hash1",
+                fen=fen2,
+                board_hash="hash2",
                 white_player="P1",
                 black_player="P2",
                 white_elo=1500,
                 black_elo=1500,
                 result="1-0",
             )
-            game_snapshots.save_snapshot(snapshot)
 
+            game_snapshots.save_snapshot(snapshot1)
+            game_snapshots.save_snapshot(snapshot2)
+
+            # Verify FENs were saved correctly
             conn = sqlite3.connect(temp_db)
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT square_0, square_4 FROM game_snapshots WHERE board_hash = ?", ("hash1",)
-            )
-            row = cursor.fetchone()
+            cursor.execute("SELECT fen FROM game_snapshots WHERE board_hash = ?", ("hash1",))
+            saved_fen1 = cursor.fetchone()[0]
+            cursor.execute("SELECT fen FROM game_snapshots WHERE board_hash = ?", ("hash2",))
+            saved_fen2 = cursor.fetchone()[0]
             conn.close()
 
-            assert row[0] == -4  # Black rook
-            assert row[1] == -6  # Black king
+            assert saved_fen1 == fen1
+            assert saved_fen2 == fen2
 
     def test_save_snapshot_with_none_elo(self, temp_db):
         """Test saving a snapshot with None ELO values."""
         with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            board = [0] * 64
+            fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
             snapshot = GameSnapshot(
                 raw_game_id=1,
                 move_number=1,
                 turn="w",
                 move="e4",
-                board=board,
+                fen=fen,
                 board_hash="hash1",
                 white_player="P1",
                 black_player="P2",
@@ -284,7 +274,7 @@ class TestGameSnapshotsTable:
     def test_save_snapshot_different_results(self, temp_db):
         """Test saving snapshots with different game results."""
         with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            board = [0] * 64
+            fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
             results = ["1-0", "0-1", "1/2-1/2", "*"]
 
             for i, result in enumerate(results):
@@ -293,7 +283,7 @@ class TestGameSnapshotsTable:
                     move_number=i,
                     turn="w",
                     move=f"move{i}",
-                    board=board,
+                    fen=fen,
                     board_hash=f"hash{i}",
                     white_player="P1",
                     black_player="P2",
@@ -314,13 +304,13 @@ class TestGameSnapshotsTable:
     def test_save_snapshot_high_move_number(self, temp_db):
         """Test saving a snapshot with high move number."""
         with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            board = [0] * 64
+            fen = "8/6k1/8/8/8/8/6K1/8 w - - 0 75"
             snapshot = GameSnapshot(
                 raw_game_id=1,
                 move_number=150,
                 turn="w",
                 move="Kg3",
-                board=board,
+                fen=fen,
                 board_hash="hash1",
                 white_player="P1",
                 black_player="P2",
@@ -343,7 +333,7 @@ class TestGameSnapshotsTable:
     def test_save_snapshot_complex_move(self, temp_db):
         """Test saving snapshots with complex move notation."""
         with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            board = [0] * 64
+            fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
             moves = ["e4", "Nf3", "O-O", "Qxd8+", "Rxd8#"]
 
             for i, move in enumerate(moves):
@@ -352,7 +342,7 @@ class TestGameSnapshotsTable:
                     move_number=i,
                     turn="w",
                     move=move,
-                    board=board,
+                    fen=fen,
                     board_hash=f"hash{i}",
                     white_player="P1",
                     black_player="P2",
@@ -373,13 +363,13 @@ class TestGameSnapshotsTable:
     def test_save_snapshot_unicode_player_names(self, temp_db):
         """Test saving snapshots with unicode in player names."""
         with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            board = [0] * 64
+            fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
             snapshot = GameSnapshot(
                 raw_game_id=1,
                 move_number=1,
                 turn="w",
                 move="e4",
-                board=board,
+                fen=fen,
                 board_hash="hash1",
                 white_player="Иван",
                 black_player="José",

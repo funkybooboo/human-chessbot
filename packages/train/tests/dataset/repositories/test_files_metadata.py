@@ -15,7 +15,7 @@ def temp_db(tmp_path):
     """Create a temporary database for testing."""
     db_path = tmp_path / "test.db"
     with (
-        patch("packages.train.src.dataset.repositories.config.DB_FILE", str(db_path)),
+        patch("packages.train.src.dataset.repositories.db_utils.DB_FILE", str(db_path)),
         patch("packages.train.src.dataset.repositories.files_metadata.DB_FILE", str(db_path)),
     ):
         yield str(db_path)
@@ -65,7 +65,7 @@ class TestFilesMetadataTable:
         with (
             patch("packages.train.src.dataset.repositories.database.DB_FILE", temp_db),
             patch("packages.train.src.dataset.repositories.files_metadata.DB_FILE", temp_db),
-            patch("packages.train.src.dataset.repositories.config.DB_FILE", temp_db),
+            patch("packages.train.src.dataset.repositories.db_utils.DB_FILE", temp_db),
         ):
             database.initialize_database()
             self.db_path = temp_db
@@ -232,7 +232,7 @@ class TestFilesMetadataTable:
     def test_files_metadata_exist_empty(self, temp_db):
         """Test files_metadata_exist returns False for empty table."""
         with (
-            patch("packages.train.src.dataset.repositories.config.DB_FILE", temp_db),
+            patch("packages.train.src.dataset.repositories.db_utils.DB_FILE", temp_db),
             patch("packages.train.src.dataset.repositories.files_metadata.DB_FILE", temp_db),
         ):
             result = files_metadata.files_metadata_exist()
@@ -249,6 +249,6 @@ class TestFilesMetadataTable:
             )
             files_metadata.save_file_metadata(metadata)
 
-        with patch("packages.train.src.dataset.repositories.config.DB_FILE", temp_db):
+        with patch("packages.train.src.dataset.repositories.db_utils.DB_FILE", temp_db):
             result = files_metadata.files_metadata_exist()
             assert result is True

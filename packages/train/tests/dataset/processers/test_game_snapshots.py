@@ -3,7 +3,6 @@
 from packages.train.src.dataset.models.raw_game import RawGame
 from packages.train.src.dataset.processers.game_snapshots import (
     _compute_board_hash,
-    _piece_to_int,
     _safe_int,
     raw_game_to_snapshots,
 )
@@ -37,74 +36,43 @@ class TestSafeInt:
         assert _safe_int("0") == 0
 
 
-class TestPieceToInt:
-    """Tests for _piece_to_int helper function."""
-
-    def test_none_square(self):
-        """Test empty square."""
-        assert _piece_to_int(None) == 0
-
-    def test_white_pieces(self):
-        """Test white piece mappings."""
-        import chess
-
-        assert _piece_to_int(chess.Piece(chess.PAWN, chess.WHITE)) == 1
-        assert _piece_to_int(chess.Piece(chess.KNIGHT, chess.WHITE)) == 2
-        assert _piece_to_int(chess.Piece(chess.BISHOP, chess.WHITE)) == 3
-        assert _piece_to_int(chess.Piece(chess.ROOK, chess.WHITE)) == 4
-        assert _piece_to_int(chess.Piece(chess.QUEEN, chess.WHITE)) == 5
-        assert _piece_to_int(chess.Piece(chess.KING, chess.WHITE)) == 6
-
-    def test_black_pieces(self):
-        """Test black piece mappings."""
-        import chess
-
-        assert _piece_to_int(chess.Piece(chess.PAWN, chess.BLACK)) == -1
-        assert _piece_to_int(chess.Piece(chess.KNIGHT, chess.BLACK)) == -2
-        assert _piece_to_int(chess.Piece(chess.BISHOP, chess.BLACK)) == -3
-        assert _piece_to_int(chess.Piece(chess.ROOK, chess.BLACK)) == -4
-        assert _piece_to_int(chess.Piece(chess.QUEEN, chess.BLACK)) == -5
-        assert _piece_to_int(chess.Piece(chess.KING, chess.BLACK)) == -6
-
-
 class TestComputeBoardHash:
     """Tests for _compute_board_hash function."""
 
     def test_deterministic(self):
         """Test that hash is deterministic."""
-        board = [0] * 64
-        hash1 = _compute_board_hash(board, "w", "e4")
-        hash2 = _compute_board_hash(board, "w", "e4")
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        hash1 = _compute_board_hash(fen, "w", "e4")
+        hash2 = _compute_board_hash(fen, "w", "e4")
         assert hash1 == hash2
 
     def test_different_boards(self):
-        """Test that different boards produce different hashes."""
-        board1 = [0] * 64
-        board2 = [0] * 64
-        board2[0] = 4  # Add a rook
+        """Test that different FEN positions produce different hashes."""
+        fen1 = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        fen2 = "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"
 
-        hash1 = _compute_board_hash(board1, "w", "e4")
-        hash2 = _compute_board_hash(board2, "w", "e4")
+        hash1 = _compute_board_hash(fen1, "w", "e4")
+        hash2 = _compute_board_hash(fen2, "w", "e4")
         assert hash1 != hash2
 
     def test_different_turns(self):
         """Test that different turns produce different hashes."""
-        board = [0] * 64
-        hash1 = _compute_board_hash(board, "w", "e4")
-        hash2 = _compute_board_hash(board, "b", "e4")
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        hash1 = _compute_board_hash(fen, "w", "e4")
+        hash2 = _compute_board_hash(fen, "b", "e4")
         assert hash1 != hash2
 
     def test_different_moves(self):
         """Test that different moves produce different hashes."""
-        board = [0] * 64
-        hash1 = _compute_board_hash(board, "w", "e4")
-        hash2 = _compute_board_hash(board, "w", "d4")
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        hash1 = _compute_board_hash(fen, "w", "e4")
+        hash2 = _compute_board_hash(fen, "w", "d4")
         assert hash1 != hash2
 
     def test_hash_length(self):
         """Test that hash is SHA-256 (64 hex chars)."""
-        board = [0] * 64
-        hash_val = _compute_board_hash(board, "w", "e4")
+        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+        hash_val = _compute_board_hash(fen, "w", "e4")
         assert len(hash_val) == 64
 
 
@@ -212,8 +180,8 @@ class TestRawGameToSnapshots:
         game = RawGame(id=1, pgn=pgn)
         snapshots = list(raw_game_to_snapshots(game))
 
-        # Boards should be different after each move
-        assert snapshots[0].board != snapshots[1].board
+        # FENs should be different after each move
+        assert snapshots[0].fen != snapshots[1].fen
 
     def test_unique_board_hashes(self):
         """Test that each snapshot has a unique board hash."""
@@ -337,8 +305,8 @@ class TestRawGameToSnapshots:
         assert snapshots[0].white_player == "?"
         assert snapshots[0].black_player == "?"
 
-    def test_board_size(self):
-        """Test that all boards are 64 squares."""
+    def test_fen_format(self):
+        """Test that all snapshots have valid FEN strings."""
         pgn = """[Event "Test"]
 [White "P1"]
 [Black "P2"]
@@ -348,4 +316,7 @@ class TestRawGameToSnapshots:
         game = RawGame(id=1, pgn=pgn)
         snapshots = list(raw_game_to_snapshots(game))
 
-        assert all(len(s.board) == 64 for s in snapshots)
+        # All snapshots should have FEN strings
+        assert all(s.fen for s in snapshots)
+        # FEN strings should have the correct format (contains spaces)
+        assert all(" " in s.fen for s in snapshots)
