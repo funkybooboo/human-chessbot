@@ -156,8 +156,18 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument(
         "-b", "--bins", type=int, default=50, help="Bin width in Elo points (default 50)"
     )
-    p.add_argument("--no-show", dest="show", action="store_false", help="Do not call plt.show()")
-    p.add_argument("-o", "--output", help="File path to save the plot (PNG, PDF, etc.)")
+    p.add_argument(
+        "--show",
+        dest="show",
+        action="store_true",
+        help="Display plot in GUI (default: save to file)",
+    )
+    p.add_argument(
+        "-o",
+        "--output",
+        default="elo_distribution.png",
+        help="File path to save the plot (default: elo_distribution.png)",
+    )
     return p.parse_args()
 
 
