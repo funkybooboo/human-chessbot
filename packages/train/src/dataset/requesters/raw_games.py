@@ -3,15 +3,21 @@ from collections.abc import Iterator
 import requests
 import zstandard as zstd
 
-from packages.train.src.data.database.files_metadata import (
+from packages.train.src.dataset.constants import CHUNK_SIZE, DEFAULT_MAX_FILES
+from packages.train.src.dataset.logger import get_logger
+from packages.train.src.dataset.models.raw_game import RawGame
+from packages.train.src.dataset.repositories.files_metadata import (
     fetch_files_metadata_under_size,
     mark_file_as_processed,
 )
-from packages.train.src.data.database.raw_games import raw_game_exists, save_raw_game
-from packages.train.src.data.models.raw_game import RawGame
+from packages.train.src.dataset.repositories.raw_games import raw_game_exists, save_raw_game
+
+logger = get_logger("requesters.raw_games")
 
 
-def fetch_new_raw_games(max_files: int = 5, max_size_gb: float = 1) -> Iterator[RawGame]:
+def fetch_new_raw_games(
+    max_files: int = DEFAULT_MAX_FILES, max_size_gb: float = 1
+) -> Iterator[RawGame]:
     """
     Generator that yields new RawGame objects from Lichess PGN files one by one.
     Prefers smaller files first to avoid memory spikes.
@@ -31,19 +37,19 @@ def fetch_new_raw_games(max_files: int = 5, max_size_gb: float = 1) -> Iterator[
     files_to_download = unprocessed_files[:max_files]
 
     for file_meta in files_to_download:
-        print(
+        logger.info(
             f"Downloading and decompressing PGN file: {file_meta.filename} ({file_meta.size_gb} GB)..."
         )
         response = requests.get(file_meta.url, stream=True)
         if response.status_code != 200:
-            print(f"Failed to download {file_meta.filename} (status {response.status_code})")
+            logger.error(f"Failed to download {file_meta.filename} (status {response.status_code})")
             continue
 
         decompressor = zstd.ZstdDecompressor()
         with decompressor.stream_reader(response.raw) as reader:
             buffer = bytearray()
             while True:
-                chunk = reader.read(16384)  # 16 KB
+                chunk = reader.read(CHUNK_SIZE)
                 if not chunk:
                     break
                 buffer.extend(chunk)

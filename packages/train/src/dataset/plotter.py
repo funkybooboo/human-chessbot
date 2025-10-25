@@ -4,12 +4,17 @@ import sqlite3
 
 from matplotlib import pyplot as plt
 
+from packages.train.src.dataset.constants import MAX_ELO, MIN_ELO
+from packages.train.src.dataset.logger import get_logger
+
+logger = get_logger("plotter")
+
 
 def compute_histograms(
     db_path: str,
     bin_size: int = 50,
-    min_val: int | None = 600,
-    max_val: int | None = 1900,
+    min_val: int | None = MIN_ELO,
+    max_val: int | None = MAX_ELO,
     batch_size: int = 10_000,
 ) -> tuple[list[int], list[int], list[float]]:
     """Compute histogram counts for white and black Elo ratings by streaming rows.
@@ -34,7 +39,7 @@ def compute_histograms(
         cur = conn.cursor()
         # Efficiently compute min/max via SQL to avoid scanning everything in Python
         cur.execute(
-            "SELECT MIN(white_elo), MAX(white_elo), MIN(black_elo), MAX(black_elo) FROM state"
+            "SELECT MIN(white_elo), MAX(white_elo), MIN(black_elo), MAX(black_elo) FROM game_snapshots"
         )
         min_white, max_white, min_black, max_black = cur.fetchone()
 
@@ -62,7 +67,7 @@ def compute_histograms(
         black_counts = [0] * bins
 
         # Stream rows and increment bin counters
-        cur.execute("SELECT white_elo, black_elo FROM state")
+        cur.execute("SELECT white_elo, black_elo FROM game_snapshots")
         while True:
             rows = cur.fetchmany(batch_size)
             if not rows:
@@ -147,7 +152,7 @@ def plot_elo_distribution(
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Plot Elo distributions from the database")
-    p.add_argument("db", help="Path to sqlite database")
+    p.add_argument("db", default="./database.sqlite3", help="Path to sqlite database")
     p.add_argument(
         "-b", "--bins", type=int, default=50, help="Bin width in Elo points (default 50)"
     )

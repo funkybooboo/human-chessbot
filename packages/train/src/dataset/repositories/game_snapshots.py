@@ -1,8 +1,8 @@
 import sqlite3
 from collections.abc import Iterable
 
-from packages.train.src.data.database.config import DB_FILE
-from packages.train.src.data.models.game_snapshot import GameSnapshot
+from packages.train.src.dataset.models.game_snapshot import GameSnapshot
+from packages.train.src.dataset.repositories.config import DB_FILE
 
 _TABLE_NAME = "game_snapshots"
 
@@ -104,7 +104,8 @@ def count_snapshots() -> int:
     c = conn.cursor()
     try:
         c.execute("SELECT COUNT(*) FROM game_snapshots")
-        count = c.fetchone()[0]
+        result = c.fetchone()
+        count = result[0] if result else 0
     finally:
         conn.close()
     return count

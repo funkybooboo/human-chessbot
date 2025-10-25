@@ -5,24 +5,9 @@ from io import StringIO
 import chess
 import chess.pgn
 
-from packages.train.src.data.models.game_snapshot import GameSnapshot
-from packages.train.src.data.models.raw_game import RawGame
-
-PIECE_TO_INT = {
-    "P": 1,
-    "N": 2,
-    "B": 3,
-    "R": 4,
-    "Q": 5,
-    "K": 6,  # white pieces
-    "p": -1,
-    "n": -2,
-    "b": -3,
-    "r": -4,
-    "q": -5,
-    "k": -6,  # black pieces
-    None: 0,  # empty square
-}
+from packages.train.src.dataset.constants import BOARD_SIZE, PIECE_TO_INT
+from packages.train.src.dataset.models.game_snapshot import GameSnapshot
+from packages.train.src.dataset.models.raw_game import RawGame
 
 
 def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
@@ -49,11 +34,11 @@ def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
         san_move = board.san(move)
         board.push(move)
 
-        board_array = [_piece_to_int(board.piece_at(i)) for i in range(64)]
+        board_array = [_piece_to_int(board.piece_at(i)) for i in range(BOARD_SIZE)]
         board_hash = _compute_board_hash(board_array, turn, san_move)
 
         yield GameSnapshot(
-            raw_game_id=raw_game.id,  # link back to raw game
+            raw_game_id=raw_game.id if raw_game.id is not None else 0,  # link back to raw game
             move_number=move_number,
             turn=turn,
             move=san_move,
@@ -77,6 +62,8 @@ def _compute_board_hash(board_array: list[int], turn: str, move: str) -> str:
 
 def _safe_int(val: str | None) -> int | None:
     """Convert a string to int, return None if conversion fails."""
+    if val is None:
+        return None
     try:
         return int(val)
     except (TypeError, ValueError):

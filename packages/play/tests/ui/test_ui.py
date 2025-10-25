@@ -14,9 +14,9 @@ class MockUi(Ui):
         super().__init__(game)
         self.run_called = False
         self.display_board_called = False
-        self.messages = []
-        self.score_updates = []
-        self.move_list = []
+        self.messages: list[str] = []
+        self.score_updates: list[tuple[float, float]] = []
+        self.move_list: list[str] = []
         self.reset_count = 0
 
     def run(self):

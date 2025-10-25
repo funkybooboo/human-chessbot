@@ -1,34 +1,58 @@
 # Train Package
 
-Machine learning training utilities for chess engines.
+ML training data pipeline for chess. Fetches Lichess games, processes PGN into board snapshots for model training.
 
-## Status
+## Quick Start
 
-**In Development**
+```bash
+# Install dependencies
+pip install -e ".[dev]"
 
-## Planned Features
+# Fill database with game snapshots
+python -m src.dataset.fill_snapshots
 
-- Model training pipelines
-- Data preprocessing
-- Evaluation and metrics
-- Hyperparameter tuning
+# Visualize ELO distribution
+python -m src.dataset.plotter
+```
+
+## Run Tests
+
+```bash
+# All tests
+pytest tests/dataset/
+
+# With coverage
+pytest tests/dataset/ --cov=dataset --cov-report=html
+
+# Specific module
+pytest tests/dataset/models/
+```
 
 ## Structure
 
 ```
 train/
-├── src/train/             # Training utilities
-├── tests/                 # Test suite
-└── docs/                  # Documentation
+├── src/
+│   └── dataset/           # ETL pipeline for Lichess data
+│       ├── models/        # Data classes
+│       ├── repositories/  # Database (SQLite)
+│       ├── requesters/    # Lichess API
+│       ├── processers/    # PGN transformers
+│       └── fill_snapshots.py  # Main pipeline
+├── tests/dataset/         # 133+ tests
+└── docs/                  # Detailed documentation
 ```
 
-## Development
+## Database
 
-```bash
-# Run tests
-cd packages/train
-pytest
+- **Location**: `./database.sqlite3`
+- **Tables**: `files_metadata`, `raw_games`, `game_snapshots`
+- **Snapshots**: Board state (64 squares) + metadata per move
 
-# Format code
-black src/ tests/
-```
+## Documentation
+
+See [docs/readme.md](docs/readme.md) for:
+- Architecture details
+- Usage examples
+- Test documentation
+- Refactoring history

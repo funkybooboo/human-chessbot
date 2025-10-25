@@ -10,6 +10,7 @@ from packages.play.src.player.lc0_bot_player import Lc0BotPlayer, Lc0BotPlayerCo
 from packages.play.src.player.stockfish_bot_player import StockfishPlayer, StockfishPlayerConfig
 from packages.play.src.ui.cli import Cli
 from packages.play.src.ui.gui import Gui
+from packages.play.src.ui.ui import Ui
 
 # Setup logging
 logging.basicConfig(
@@ -68,6 +69,8 @@ def main():
     save_dir = args.save_dir if args.save_dir else get_default_save_dir()
 
     # Create players (randomly assign colors)
+    white: Lc0BotPlayer | StockfishPlayer
+    black: Lc0BotPlayer | StockfishPlayer
     if random.choice([True, False]):
         logger.info("Creating players: Leela (White) vs Stockfish (Black)")
         white = Lc0BotPlayer(config=Lc0BotPlayerConfig(name="Leela", color=True, time_limit=1.0))
@@ -89,6 +92,7 @@ def main():
     game = Game(white, black, config=GameConfig(save_dir=save_dir, time_limit=args.time_limit))
 
     # Create and run UI
+    ui: Ui
     if args.ui == "gui":
         logger.info("Starting GUI")
         ui = Gui(game)

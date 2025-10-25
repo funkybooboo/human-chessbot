@@ -106,6 +106,7 @@ class Gui(Ui):
         self.selected_square: int | None = None
         self.legal_moves: list[chess.Move] = []
         self.illegal_dest: int | None = None
+        self.after_id: str | None = None
 
         # Layout
         main_frame: tk.Frame = tk.Frame(self.root)
@@ -412,13 +413,14 @@ class Gui(Ui):
         if self.game.is_over():
             result = self.game.result()
             if result == "1-0":
-                winner, loser = self.game.white_player, self.game.black_player
+                winner = self.game.white_player
+                loser = self.game.black_player
+                winner.record_win()
+                loser.record_loss()
+                self.game_over_label.config(text=f"Game Over: {winner.config.name} won!")
             elif result == "0-1":
-                winner, loser = self.game.black_player, self.game.white_player
-            else:
-                winner = loser = None
-
-            if winner:
+                winner = self.game.black_player
+                loser = self.game.white_player
                 winner.record_win()
                 loser.record_loss()
                 self.game_over_label.config(text=f"Game Over: {winner.config.name} won!")
@@ -464,7 +466,7 @@ class Gui(Ui):
 
     # ================= Event Handlers =================
 
-    def _on_resize(self, event: tk.Event) -> None:
+    def _on_resize(self, event: tk.Event) -> None:  # noqa: ARG002
         """Handle window resize event.
 
         Args:
@@ -544,7 +546,7 @@ class Gui(Ui):
             self._update_turn_label()
 
         # Continue loop
-        self.root.after_id = self.root.after(100, self._game_loop)
+        self.after_id = self.root.after(100, self._game_loop)
 
     # ================= Utility Methods =================
 
@@ -577,7 +579,7 @@ class Gui(Ui):
                     logger.warning(f"Error closing player: {e}")
 
         # Cancel pending after events
-        if hasattr(self, "after_id"):
+        if self.after_id:
             self.root.after_cancel(self.after_id)
 
         logger.info("Quitting GUI")
