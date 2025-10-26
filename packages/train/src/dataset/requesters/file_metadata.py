@@ -4,11 +4,8 @@ from urllib.parse import urljoin
 
 import requests
 
-from packages.train.src.dataset.constants import LICHESS_BASE_URL
-from packages.train.src.dataset.logger import get_logger
+from packages.train.src.constants import LICHESS_BASE_URL
 from packages.train.src.dataset.models.file_metadata import FileMetadata
-
-logger = get_logger("requesters.file_metadata")
 
 _BASE_URL = LICHESS_BASE_URL
 _COUNTS_URL = urljoin(_BASE_URL, "counts.txt")
@@ -59,6 +56,6 @@ if __name__ == "__main__":
     files_metadata_iter = fetch_files_metadata()
     files_preview = [next(files_metadata_iter) for _ in range(10)]  # preview first 10
 
-    logger.info("Found at least 10 standard files.")
+    print("Found at least 10 standard files.")
     for file in files_preview:
-        logger.info(file)
+        print(file)

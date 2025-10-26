@@ -3,16 +3,13 @@ from collections.abc import Iterator
 import requests
 import zstandard as zstd
 
-from packages.train.src.dataset.constants import CHUNK_SIZE, DEFAULT_MAX_FILES
-from packages.train.src.dataset.logger import get_logger
+from packages.train.src.constants import CHUNK_SIZE, DEFAULT_MAX_FILES
 from packages.train.src.dataset.models.raw_game import RawGame
 from packages.train.src.dataset.repositories.files_metadata import (
     fetch_files_metadata_under_size,
     mark_file_as_processed,
 )
 from packages.train.src.dataset.repositories.raw_games import raw_game_exists, save_raw_game
-
-logger = get_logger("requesters.raw_games")
 
 
 def fetch_new_raw_games(
@@ -37,12 +34,12 @@ def fetch_new_raw_games(
     files_to_download = unprocessed_files[:max_files]
 
     for file_meta in files_to_download:
-        logger.info(
+        print(
             f"Downloading and decompressing PGN file: {file_meta.filename} ({file_meta.size_gb} GB)..."
         )
         response = requests.get(file_meta.url, stream=True)
         if response.status_code != 200:
-            logger.error(f"Failed to download {file_meta.filename} (status {response.status_code})")
+            print(f"ERROR: Failed to download {file_meta.filename} (status {response.status_code})")
             continue
 
         decompressor = zstd.ZstdDecompressor()

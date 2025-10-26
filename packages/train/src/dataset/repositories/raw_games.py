@@ -1,7 +1,7 @@
 import sqlite3
 from collections.abc import Iterator
 
-from packages.train.src.dataset.constants import DB_FILE
+from packages.train.src.constants import DB_FILE
 from packages.train.src.dataset.models.raw_game import RawGame
 
 _TABLE_NAME = "raw_games"

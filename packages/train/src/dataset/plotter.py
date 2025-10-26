@@ -4,10 +4,7 @@ import sqlite3
 
 from matplotlib import pyplot as plt
 
-from packages.train.src.dataset.constants import DB_FILE, MAX_ELO, MIN_ELO
-from packages.train.src.dataset.logger import get_logger
-
-logger = get_logger("plotter")
+from packages.train.src.constants import DB_FILE, MAX_ELO, MIN_ELO
 
 
 def compute_histograms(

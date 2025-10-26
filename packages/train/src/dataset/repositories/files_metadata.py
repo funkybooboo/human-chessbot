@@ -1,7 +1,7 @@
 import sqlite3
 from collections.abc import Iterable, Iterator
 
-from packages.train.src.dataset.constants import DB_FILE
+from packages.train.src.constants import DB_FILE
 from packages.train.src.dataset.models.file_metadata import FileMetadata
 from packages.train.src.dataset.repositories.db_utils import is_database_initialized
 

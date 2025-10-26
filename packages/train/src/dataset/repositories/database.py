@@ -1,7 +1,7 @@
 import sqlite3
 from collections.abc import Callable
 
-from packages.train.src.dataset.constants import DB_FILE
+from packages.train.src.constants import DB_FILE
 from packages.train.src.dataset.repositories.files_metadata import create_files_metadata_table
 from packages.train.src.dataset.repositories.game_snapshots import create_game_snapshots_table
 from packages.train.src.dataset.repositories.legal_move import create_legal_moves_table

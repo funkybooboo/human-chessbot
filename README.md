@@ -7,8 +7,9 @@ A comprehensive chess application suite featuring multiple chess engines, data c
 - Interactive chess game with GUI and CLI interfaces
 - Multiple chess engines (Stockfish, LCZero, Random bot)
 - PGN file conversion and processing utilities
+- Lichess data pipeline for ML training
 - Time controls and game recording
-- Comprehensive test coverage (101 tests, 100% passing)
+- Comprehensive test coverage
 
 ## Quick Start
 
@@ -50,7 +51,8 @@ the_human_chess_bot/
 ├── packages/
 │   ├── play/          # Chess game application
 │   ├── convert/       # Data conversion utilities
-│   └── train/         # ML training tools (planned)
+│   ├── dataset/       # Lichess data pipeline
+│   └── train/         # ML training tools (in development)
 ├── docs/              # Project-wide documentation
 ├── pyproject.toml     # Project configuration
 └── README.md
@@ -60,16 +62,18 @@ the_human_chess_bot/
 
 ### Play Package
 Interactive chess application with multiple engines and dual interfaces.
-- 73 tests, 100% passing
 - [Documentation](packages/play/README.md)
 
 ### Convert Package
 Data conversion utilities for chess formats (PGN to CSV, file combination).
-- 28 tests, 100% passing
 - [Documentation](packages/convert/README.md)
 
-### Train Package (Coming Soon)
-Machine learning training pipeline for chess AI.
+### Dataset Package
+ETL pipeline for fetching and processing Lichess games into training data.
+- [Documentation](packages/train/src/dataset/README.md)
+
+### Train Package
+ML training pipeline for chess AI models (in development).
 - [Documentation](packages/train/README.md)
 
 ## Development
@@ -162,8 +166,10 @@ pytest packages/*/tests/ -v
 
 ## Documentation
 
-- [Play Package Documentation](packages/play/README.md)
-- [Convert Package Documentation](packages/convert/README.md)
+- [Play Package](packages/play/README.md)
+- [Convert Package](packages/convert/README.md)
+- [Dataset Package](packages/train/src/dataset/README.md)
+- [Train Package](packages/train/README.md)
 
 ## License
 

@@ -1,14 +1,12 @@
 """LCZero (Leela Chess Zero) chess engine player implementation."""
 
-import logging
 import shutil
 
 import chess
 import chess.engine
 
+from packages.play.src.constants import LC0_TIME_LIMIT
 from packages.play.src.player.player import Player, PlayerConfig
-
-logger = logging.getLogger(__name__)
 
 
 class Lc0BotPlayerConfig(PlayerConfig):
@@ -24,7 +22,7 @@ class Lc0BotPlayerConfig(PlayerConfig):
 
     name: str = "Lc0"
     color: bool = True
-    time_limit: float = 1.0
+    time_limit: float = LC0_TIME_LIMIT
 
 
 class Lc0BotPlayer(Player):
@@ -63,7 +61,7 @@ class Lc0BotPlayer(Player):
 
         # Start LCZero engine
         self.engine = chess.engine.SimpleEngine.popen_uci([engine_path])
-        logger.info(f"Initialized LCZero player '{config.name}'")
+        print(f"Initialized LCZero player '{config.name}'")
 
     def get_move(self, board: chess.Board) -> chess.Move | None:
         """Generate a move using LCZero engine.
@@ -78,14 +76,14 @@ class Lc0BotPlayer(Player):
             return None
 
         if self.engine is None:
-            logger.error("Engine not initialized")
+            print("ERROR: Engine not initialized")
             return None
 
         try:
             result = self.engine.play(board, chess.engine.Limit(time=self.time_limit))
             return result.move
         except Exception as e:
-            logger.error(f"LCZero error: {e}")
+            print(f"ERROR: LCZero error: {e}")
             return None
 
     def close(self) -> None:
@@ -93,9 +91,9 @@ class Lc0BotPlayer(Player):
         if self.engine is not None:
             try:
                 self.engine.quit()
-                logger.info(f"Closed LCZero engine for player '{self.config.name}'")
+                print(f"Closed LCZero engine for player '{self.config.name}'")
             except Exception as e:
-                logger.warning(f"Error closing LCZero engine: {e}")
+                print(f"WARNING: Error closing LCZero engine: {e}")
             finally:
                 self.engine = None
 

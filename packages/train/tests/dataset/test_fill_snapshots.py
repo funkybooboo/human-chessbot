@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 
-from packages.train.src.dataset.fill_snapshots import fill_database_with_snapshots
+from packages.train.src.dataset.fillers.fill_snapshots import fill_database_with_snapshots
 from packages.train.src.dataset.models.file_metadata import FileMetadata
 from packages.train.src.dataset.models.raw_game import RawGame
 
@@ -10,9 +10,9 @@ from packages.train.src.dataset.models.raw_game import RawGame
 class TestFillDatabaseWithSnapshots:
     """Tests for fill_database_with_snapshots function."""
 
-    @patch("packages.train.src.dataset.fill_snapshots.initialize_database")
-    @patch("packages.train.src.dataset.fill_snapshots.files_metadata_exist")
-    @patch("packages.train.src.dataset.fill_snapshots.count_snapshots")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.files_metadata_exist")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.count_snapshots")
     def test_stops_when_threshold_reached(self, mock_count, mock_files_exist, _mock_init):
         """Test that function stops when snapshot threshold is reached."""
         mock_files_exist.return_value = True
@@ -23,11 +23,11 @@ class TestFillDatabaseWithSnapshots:
         _mock_init.assert_called_once()
         mock_files_exist.assert_called_once()
 
-    @patch("packages.train.src.dataset.fill_snapshots.initialize_database")
-    @patch("packages.train.src.dataset.fill_snapshots.files_metadata_exist")
-    @patch("packages.train.src.dataset.fill_snapshots.save_files_metadata")
-    @patch("packages.train.src.dataset.fill_snapshots.fetch_files_metadata")
-    @patch("packages.train.src.dataset.fill_snapshots.count_snapshots")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.files_metadata_exist")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.save_files_metadata")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_files_metadata")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.count_snapshots")
     def test_fetches_metadata_if_not_exists(
         self,
         mock_count,
@@ -53,13 +53,13 @@ class TestFillDatabaseWithSnapshots:
         mock_fetch_metadata.assert_called_once()
         mock_save_metadata.assert_called_once()
 
-    @patch("packages.train.src.dataset.fill_snapshots.initialize_database")
-    @patch("packages.train.src.dataset.fill_snapshots.files_metadata_exist")
-    @patch("packages.train.src.dataset.fill_snapshots.count_snapshots")
-    @patch("packages.train.src.dataset.fill_snapshots.fetch_unprocessed_raw_games")
-    @patch("packages.train.src.dataset.fill_snapshots.raw_game_to_snapshots")
-    @patch("packages.train.src.dataset.fill_snapshots.save_snapshot")
-    @patch("packages.train.src.dataset.fill_snapshots.mark_raw_game_as_processed")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.files_metadata_exist")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.count_snapshots")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_unprocessed_raw_games")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.raw_game_to_snapshots")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.save_snapshot")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.mark_raw_game_as_processed")
     def test_processes_unprocessed_games(
         self,
         mock_mark_processed,
@@ -102,12 +102,12 @@ class TestFillDatabaseWithSnapshots:
         mock_save_snapshot.assert_called()
         mock_mark_processed.assert_called()
 
-    @patch("packages.train.src.dataset.fill_snapshots.initialize_database")
-    @patch("packages.train.src.dataset.fill_snapshots.files_metadata_exist")
-    @patch("packages.train.src.dataset.fill_snapshots.count_snapshots")
-    @patch("packages.train.src.dataset.fill_snapshots.fetch_unprocessed_raw_games")
-    @patch("packages.train.src.dataset.fill_snapshots.fetch_new_raw_games")
-    @patch("packages.train.src.dataset.fill_snapshots.save_raw_game")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.files_metadata_exist")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.count_snapshots")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_unprocessed_raw_games")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_new_raw_games")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.save_raw_game")
     def test_fetches_new_files_when_no_unprocessed(
         self,
         _mock_save_game,
@@ -129,11 +129,11 @@ class TestFillDatabaseWithSnapshots:
 
         mock_fetch_new.assert_called_once()
 
-    @patch("packages.train.src.dataset.fill_snapshots.initialize_database")
-    @patch("packages.train.src.dataset.fill_snapshots.files_metadata_exist")
-    @patch("packages.train.src.dataset.fill_snapshots.count_snapshots")
-    @patch("packages.train.src.dataset.fill_snapshots.fetch_unprocessed_raw_games")
-    @patch("packages.train.src.dataset.fill_snapshots.fetch_new_raw_games")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.files_metadata_exist")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.count_snapshots")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_unprocessed_raw_games")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_new_raw_games")
     def test_stops_when_no_new_files_available(
         self,
         mock_fetch_new,
@@ -156,21 +156,22 @@ class TestFillDatabaseWithSnapshots:
     def test_uses_default_parameters(self):
         """Test that function uses default parameters correctly."""
         with (
-            patch("packages.train.src.dataset.fill_snapshots.initialize_database"),
+            patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database"),
             patch(
-                "packages.train.src.dataset.fill_snapshots.files_metadata_exist", return_value=True
+                "packages.train.src.dataset.fillers.fill_snapshots.files_metadata_exist",
+                return_value=True,
             ),
             patch(
-                "packages.train.src.dataset.fill_snapshots.count_snapshots",
+                "packages.train.src.dataset.fillers.fill_snapshots.count_snapshots",
                 return_value=100_000,
             ),
         ):
             # Should stop immediately with high threshold already met
             fill_database_with_snapshots()
 
-    @patch("packages.train.src.dataset.fill_snapshots.initialize_database")
-    @patch("packages.train.src.dataset.fill_snapshots.files_metadata_exist")
-    @patch("packages.train.src.dataset.fill_snapshots.count_snapshots")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.files_metadata_exist")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.count_snapshots")
     def test_respects_custom_threshold(self, mock_count, mock_files_exist, _mock_init):
         """Test that custom threshold is respected."""
         mock_files_exist.return_value = True
@@ -185,8 +186,8 @@ class TestFillDatabaseWithSnapshots:
 class TestFillSnapshotsIntegration:
     """Integration tests for fill_snapshots (with mocked external dependencies)."""
 
-    @patch("packages.train.src.dataset.fill_snapshots.fetch_files_metadata")
-    @patch("packages.train.src.dataset.fill_snapshots.fetch_new_raw_games")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_files_metadata")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_new_raw_games")
     def test_full_pipeline_mock(self, mock_fetch_new, mock_fetch_metadata, tmp_path):
         """Test the full pipeline with mocked external dependencies."""
         # This is a placeholder for a more comprehensive integration test
