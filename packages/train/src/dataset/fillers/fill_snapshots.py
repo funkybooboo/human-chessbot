@@ -1,23 +1,28 @@
-from packages.train.src.data.database.database import initialize_database
-from packages.train.src.data.database.files_metadata import (
+from packages.train.src.constants import (
+    DEFAULT_MAX_SIZE_GB,
+    DEFAULT_PRINT_INTERVAL,
+    DEFAULT_SNAPSHOTS_THRESHOLD,
+)
+from packages.train.src.dataset.processers.game_snapshots import raw_game_to_snapshots
+from packages.train.src.dataset.repositories.database import initialize_database
+from packages.train.src.dataset.repositories.files_metadata import (
     files_metadata_exist,
     save_files_metadata,
 )
-from packages.train.src.data.database.game_snapshots import count_snapshots, save_snapshot
-from packages.train.src.data.database.raw_games import (
+from packages.train.src.dataset.repositories.game_snapshots import count_snapshots, save_snapshot
+from packages.train.src.dataset.repositories.raw_games import (
     fetch_unprocessed_raw_games,
     mark_raw_game_as_processed,
     save_raw_game,
 )
-from packages.train.src.data.processers.game_snapshots import raw_game_to_snapshots
-from packages.train.src.data.requesters.file_metadata import fetch_files_metadata
-from packages.train.src.data.requesters.raw_games import fetch_new_raw_games
+from packages.train.src.dataset.requesters.file_metadata import fetch_files_metadata
+from packages.train.src.dataset.requesters.raw_games import fetch_new_raw_games
 
 
 def fill_database_with_snapshots(
-    snapshots_threshold: int = 10_000,
-    max_size_gb: float = 10,
-    print_interval: int = 1_000,
+    snapshots_threshold: int = DEFAULT_SNAPSHOTS_THRESHOLD,
+    max_size_gb: float = DEFAULT_MAX_SIZE_GB,
+    print_interval: int = DEFAULT_PRINT_INTERVAL,
 ) -> None:
     """
     Fill the database with game snapshots until reaching `snapshots_threshold`.
@@ -29,9 +34,9 @@ def fill_database_with_snapshots(
     if not files_metadata_exist():
         print("Fetching file metadata from Lichess...")
         save_files_metadata(fetch_files_metadata())
-        print("Metadata saved.\n")
+        print("Metadata saved.")
     else:
-        print("File metadata already exists.\n")
+        print("File metadata already exists.")
 
     while True:
         # Stop if we've reached the target
@@ -70,7 +75,7 @@ def fill_database_with_snapshots(
                     fetched_any = True
 
             if not fetched_any:
-                print("No new files or games available. Stopping.")
+                print("WARNING: No new files or games available. Stopping.")
                 break
 
             # After fetching, next loop iteration will process them

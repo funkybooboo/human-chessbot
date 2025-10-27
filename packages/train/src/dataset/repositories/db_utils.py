@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-DB_FILE = "./database.sqlite3"
+from packages.train.src.constants import DB_FILE
 
 
 def is_database_initialized() -> bool:

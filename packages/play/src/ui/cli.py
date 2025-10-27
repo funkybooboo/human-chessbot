@@ -1,16 +1,14 @@
 """Command-line interface for chess games."""
 
-import logging
 import time
 
 import chess
 from pydantic import BaseModel, Field
 
+from packages.play.src.constants import CLI_LOOP_INTERVAL
 from packages.play.src.game.game import Game
 from packages.play.src.player.human_player import HumanPlayer
 from packages.play.src.ui.ui import Ui
-
-logger = logging.getLogger(__name__)
 
 
 class CliConfig(BaseModel):
@@ -21,7 +19,7 @@ class CliConfig(BaseModel):
     """
 
     loop_interval: float = Field(
-        default=0.1, gt=0, description="Seconds between game loop iterations"
+        default=CLI_LOOP_INTERVAL, gt=0, description="Seconds between game loop iterations"
     )
 
 
@@ -42,11 +40,11 @@ class Cli(Ui):
         super().__init__(game)
         self.config: CliConfig = config
         self.move_history: list[str] = []
-        logger.info("CLI initialized")
+        print("CLI initialized")
 
     def run(self) -> None:
         """Start the CLI game loop."""
-        logger.info("Starting CLI game loop")
+        print("Starting CLI game loop")
         self._game_loop()
 
     def reset_ui(self) -> None:
@@ -55,7 +53,7 @@ class Cli(Ui):
         print("\n" + "=" * 50)
         print("GAME RESET")
         print("=" * 50 + "\n")
-        logger.info("UI reset")
+        print("UI reset")
 
     def display_board(self) -> None:
         """Display the board in ASCII format."""

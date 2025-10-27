@@ -19,19 +19,3 @@ def temp_save_dir(temp_dir):
     save_dir = os.path.join(temp_dir, "games")
     os.makedirs(save_dir, exist_ok=True)
     return save_dir
-
-
-@pytest.fixture(autouse=True)
-def reset_logging():
-    """Reset logging configuration before each test."""
-    import logging
-
-    # Clear all handlers
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-    # Set to WARNING to reduce noise during tests
-    logging.basicConfig(level=logging.WARNING)
-    yield
-    # Cleanup after test
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)

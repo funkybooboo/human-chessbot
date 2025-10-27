@@ -1,6 +1,5 @@
 """Graphical user interface for chess games using Tkinter."""
 
-import logging
 import os
 import sys
 import tkinter as tk
@@ -10,22 +9,28 @@ import chess
 from PIL import Image, ImageTk
 from pydantic import BaseModel, Field
 
+from packages.play.src.constants import (
+    COLOR_BOARD_DARK,
+    COLOR_BOARD_LIGHT,
+    COLOR_HIGHLIGHT_CAPTURE_SQUARE,
+    COLOR_HIGHLIGHT_ILLEGAL,
+    COLOR_HIGHLIGHT_LAST_MOVE,
+    COLOR_HIGHLIGHT_LEGAL,
+    COLOR_HIGHLIGHT_SELECTED,
+    GUI_BASE_URL,
+    GUI_HIGHLIGHT_CAPTURE_SQUARE,
+    GUI_HIGHLIGHT_ILLEGAL_MOVE,
+    GUI_HIGHLIGHT_LAST_MOVE,
+    GUI_HIGHLIGHT_LEGAL_MOVES,
+    GUI_HIGHLIGHT_SELECTED,
+    GUI_IMAGE_DIR,
+    GUI_TILE_SIZE,
+    GUI_WINDOW_HEIGHT,
+    GUI_WINDOW_WIDTH,
+)
 from packages.play.src.game.game import Game
 from packages.play.src.player.human_player import HumanPlayer
 from packages.play.src.ui.ui import Ui
-
-logger = logging.getLogger(__name__)
-
-# Board colors (classic chess.com style)
-COLOR_BOARD_LIGHT = "#F0D9B5"
-COLOR_BOARD_DARK = "#B58863"
-
-# Highlight colors
-COLOR_HIGHLIGHT_LEGAL = "#A9D18E"  # Green for legal moves
-COLOR_HIGHLIGHT_ILLEGAL = "#FF6666"  # Red for illegal moves
-COLOR_HIGHLIGHT_LAST_MOVE = "#FBFFB8"  # Yellow for last move
-COLOR_HIGHLIGHT_SELECTED = "#FFFF00"  # Bright yellow for selected square
-COLOR_HIGHLIGHT_CAPTURE_SQUARE = "#FFD700"  # Gold for captures
 
 # Mapping from piece symbols to image filenames
 PIECE_CODES: dict[str, str] = {
@@ -60,16 +65,16 @@ class GuiConfig(BaseModel):
         base_url: URL to download piece images from
     """
 
-    window_width: int = Field(default=1300, gt=0)
-    window_height: int = Field(default=1000, gt=0)
-    highlight_legal_moves: bool = Field(default=True)
-    highlight_last_move: bool = Field(default=True)
-    highlight_selected: bool = Field(default=True)
-    highlight_illegal_move: bool = Field(default=True)
-    highlight_capture_square: bool = Field(default=True)
-    tile_size: int = Field(default=64, gt=0)
-    image_dir: str = Field(default="images")
-    base_url: str = Field(default="https://images.chesscomfiles.com/chess-themes/pieces/neo/150/")
+    window_width: int = Field(default=GUI_WINDOW_WIDTH, gt=0)
+    window_height: int = Field(default=GUI_WINDOW_HEIGHT, gt=0)
+    highlight_legal_moves: bool = Field(default=GUI_HIGHLIGHT_LEGAL_MOVES)
+    highlight_last_move: bool = Field(default=GUI_HIGHLIGHT_LAST_MOVE)
+    highlight_selected: bool = Field(default=GUI_HIGHLIGHT_SELECTED)
+    highlight_illegal_move: bool = Field(default=GUI_HIGHLIGHT_ILLEGAL_MOVE)
+    highlight_capture_square: bool = Field(default=GUI_HIGHLIGHT_CAPTURE_SQUARE)
+    tile_size: int = Field(default=GUI_TILE_SIZE, gt=0)
+    image_dir: str = Field(default=GUI_IMAGE_DIR)
+    base_url: str = Field(default=GUI_BASE_URL)
 
 
 class Gui(Ui):
@@ -106,6 +111,7 @@ class Gui(Ui):
         self.selected_square: int | None = None
         self.legal_moves: list[chess.Move] = []
         self.illegal_dest: int | None = None
+        self.after_id: str | None = None
 
         # Layout
         main_frame: tk.Frame = tk.Frame(self.root)
@@ -165,13 +171,13 @@ class Gui(Ui):
         # Load piece images
         os.makedirs(self.image_dir, exist_ok=True)
         self._download_and_load_images()
-        logger.info("GUI initialized")
+        print("GUI initialized")
 
     def run(self) -> None:
         """Start the GUI and game loop."""
         self._update_turn_label()
         self.root.after(100, self._game_loop)
-        logger.info("Starting GUI mainloop")
+        print("Starting GUI mainloop")
         self.root.mainloop()
 
     # ================= UI Interface Implementation =================
@@ -215,7 +221,7 @@ class Gui(Ui):
         self.selected_square = None
         self.legal_moves = []
         self.illegal_dest = None
-        logger.info("UI reset")
+        print("UI reset")
 
     def show_message(self, message: str) -> None:
         """Display a message (currently logs to console).
@@ -223,7 +229,7 @@ class Gui(Ui):
         Args:
             message: Message to display
         """
-        logger.info(f"GUI message: {message}")
+        print(f"GUI message: {message}")
 
     # ================= Setup Methods =================
 
@@ -301,7 +307,7 @@ class Gui(Ui):
             self.game_over_label.config(
                 text=f"Game Over: {timeout_winner.config.name} won on time!"
             )
-            logger.info(f"{timeout_winner.config.name} won on time")
+            print(f"{timeout_winner.config.name} won on time")
             return True
         return False
 
@@ -412,13 +418,14 @@ class Gui(Ui):
         if self.game.is_over():
             result = self.game.result()
             if result == "1-0":
-                winner, loser = self.game.white_player, self.game.black_player
+                winner = self.game.white_player
+                loser = self.game.black_player
+                winner.record_win()
+                loser.record_loss()
+                self.game_over_label.config(text=f"Game Over: {winner.config.name} won!")
             elif result == "0-1":
-                winner, loser = self.game.black_player, self.game.white_player
-            else:
-                winner = loser = None
-
-            if winner:
+                winner = self.game.black_player
+                loser = self.game.white_player
                 winner.record_win()
                 loser.record_loss()
                 self.game_over_label.config(text=f"Game Over: {winner.config.name} won!")
@@ -444,15 +451,14 @@ class Gui(Ui):
             if not os.path.exists(path):
                 try:
                     urllib.request.urlretrieve(self.config.base_url + f"{code}.png", path)
-                    logger.debug(f"Downloaded {code}.png")
                 except Exception as e:
-                    logger.error(f"Failed to download {code}.png: {e}")
+                    print(f"ERROR: Failed to download {code}.png: {e}")
                     continue
             try:
                 img = Image.open(path).convert("RGBA")
                 self.piece_images_raw[sym] = img
             except Exception as e:
-                logger.error(f"Failed to load {code}.png: {e}")
+                print(f"ERROR: Failed to load {code}.png: {e}")
 
     def _scale_images(self) -> None:
         """Scale piece images to current tile size."""
@@ -464,7 +470,7 @@ class Gui(Ui):
 
     # ================= Event Handlers =================
 
-    def _on_resize(self, event: tk.Event) -> None:
+    def _on_resize(self, event: tk.Event) -> None:  # noqa: ARG002
         """Handle window resize event.
 
         Args:
@@ -544,14 +550,14 @@ class Gui(Ui):
             self._update_turn_label()
 
         # Continue loop
-        self.root.after_id = self.root.after(100, self._game_loop)
+        self.after_id = self.root.after(100, self._game_loop)
 
     # ================= Utility Methods =================
 
     def _save_game(self) -> None:
         """Save the current game to PGN file."""
         filename = self.game.save_game()
-        logger.info(f"Game saved to {filename}")
+        print(f"Game saved to {filename}")
 
     def _reset_game(self) -> None:
         """Reset the game state and UI for a new game."""
@@ -559,7 +565,7 @@ class Gui(Ui):
         self.reset_ui()
         self._update_turn_label()
         self._draw_board()
-        logger.info("Game reset")
+        print("Game reset")
 
     def _quit_game(self) -> None:
         """Clean up and quit the application."""
@@ -569,17 +575,17 @@ class Gui(Ui):
                 try:
                     player.stop()
                 except Exception as e:
-                    logger.warning(f"Error stopping player: {e}")
+                    print(f"WARNING: Error stopping player: {e}")
             if hasattr(player, "close"):
                 try:
                     player.close()
                 except Exception as e:
-                    logger.warning(f"Error closing player: {e}")
+                    print(f"WARNING: Error closing player: {e}")
 
         # Cancel pending after events
-        if hasattr(self, "after_id"):
+        if self.after_id:
             self.root.after_cancel(self.after_id)
 
-        logger.info("Quitting GUI")
+        print("Quitting GUI")
         self.root.destroy()
         sys.exit(0)

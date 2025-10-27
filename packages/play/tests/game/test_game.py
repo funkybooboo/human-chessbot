@@ -267,7 +267,7 @@ class TestGame:
 
         assert winner == game.white_player
 
-    def test_save_game(self, game, temp_save_dir):
+    def test_save_game(self, game, temp_save_dir):  # noqa: ARG002
         """Test saving game to PGN."""
         # Make a few moves
         game.apply_move(chess.Move.from_uci("e2e4"))

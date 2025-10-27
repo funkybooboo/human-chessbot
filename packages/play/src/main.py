@@ -1,21 +1,22 @@
 """Main entry point for the chess application."""
 
 import argparse
-import logging
 import random
 from pathlib import Path
 
+from packages.play.src.constants import (
+    GAME_SAVE_DIR,
+    GAME_TIME_LIMIT,
+    LC0_TIME_LIMIT,
+    STOCKFISH_SKILL_LEVEL,
+    STOCKFISH_TIME_LIMIT,
+)
 from packages.play.src.game.game import Game, GameConfig
 from packages.play.src.player.lc0_bot_player import Lc0BotPlayer, Lc0BotPlayerConfig
 from packages.play.src.player.stockfish_bot_player import StockfishPlayer, StockfishPlayerConfig
 from packages.play.src.ui.cli import Cli
 from packages.play.src.ui.gui import Gui
-
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+from packages.play.src.ui.ui import Ui
 
 
 def get_default_save_dir() -> str:
@@ -24,8 +25,8 @@ def get_default_save_dir() -> str:
     Returns:
         Path to save directory (creates if doesn't exist).
     """
-    # Use user's home directory + project data folder
-    save_dir = Path.home() / "chess_games" / "pgn"
+    # Use configured save directory
+    save_dir = Path(GAME_SAVE_DIR)
     save_dir.mkdir(parents=True, exist_ok=True)
     return str(save_dir)
 
@@ -49,51 +50,55 @@ def main():
     parser.add_argument(
         "--time-limit",
         type=float,
-        default=600.0,
-        help="Time limit per player in seconds (default: 600)",
-    )
-    parser.add_argument(
-        "--log-level",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
-        default="INFO",
-        help="Logging level (default: INFO)",
+        default=GAME_TIME_LIMIT,
+        help=f"Time limit per player in seconds (default: {GAME_TIME_LIMIT})",
     )
 
     args = parser.parse_args()
-
-    # Set logging level
-    logging.getLogger().setLevel(args.log_level)
 
     # Determine save directory
     save_dir = args.save_dir if args.save_dir else get_default_save_dir()
 
     # Create players (randomly assign colors)
+    white: Lc0BotPlayer | StockfishPlayer
+    black: Lc0BotPlayer | StockfishPlayer
     if random.choice([True, False]):
-        logger.info("Creating players: Leela (White) vs Stockfish (Black)")
-        white = Lc0BotPlayer(config=Lc0BotPlayerConfig(name="Leela", color=True, time_limit=1.0))
+        print("Creating players: Leela (White) vs Stockfish (Black)")
+        white = Lc0BotPlayer(
+            config=Lc0BotPlayerConfig(name="Leela", color=True, time_limit=LC0_TIME_LIMIT)
+        )
         black = StockfishPlayer(
             config=StockfishPlayerConfig(
-                name="Stockfish", color=False, skill_level=10, time_limit=0.5
+                name="Stockfish",
+                color=False,
+                skill_level=STOCKFISH_SKILL_LEVEL,
+                time_limit=STOCKFISH_TIME_LIMIT,
             )
         )
     else:
-        logger.info("Creating players: Stockfish (White) vs Leela (Black)")
+        print("Creating players: Stockfish (White) vs Leela (Black)")
         white = StockfishPlayer(
             config=StockfishPlayerConfig(
-                name="Stockfish", color=True, skill_level=10, time_limit=0.5
+                name="Stockfish",
+                color=True,
+                skill_level=STOCKFISH_SKILL_LEVEL,
+                time_limit=STOCKFISH_TIME_LIMIT,
             )
         )
-        black = Lc0BotPlayer(config=Lc0BotPlayerConfig(name="Leela", color=False, time_limit=1.0))
+        black = Lc0BotPlayer(
+            config=Lc0BotPlayerConfig(name="Leela", color=False, time_limit=LC0_TIME_LIMIT)
+        )
 
     # Create game
     game = Game(white, black, config=GameConfig(save_dir=save_dir, time_limit=args.time_limit))
 
     # Create and run UI
+    ui: Ui
     if args.ui == "gui":
-        logger.info("Starting GUI")
+        print("Starting GUI")
         ui = Gui(game)
     else:
-        logger.info("Starting CLI")
+        print("Starting CLI")
         ui = Cli(game)
 
     game.ui = ui
@@ -101,13 +106,13 @@ def main():
     try:
         ui.run()
     except KeyboardInterrupt:
-        logger.info("Game interrupted by user")
+        print("Game interrupted by user")
     finally:
         # Cleanup engines
         for player in [white, black]:
             if hasattr(player, "close"):
                 player.close()
-        logger.info("Application shutdown complete")
+        print("Application shutdown complete")
 
 
 if __name__ == "__main__":
