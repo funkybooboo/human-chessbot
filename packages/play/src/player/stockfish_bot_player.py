@@ -1,14 +1,12 @@
 """Stockfish chess engine player implementation."""
 
-import logging
 import shutil
 
 import chess
 import chess.engine
 
+from packages.play.src.constants import STOCKFISH_SKILL_LEVEL, STOCKFISH_TIME_LIMIT
 from packages.play.src.player.player import Player, PlayerConfig
-
-logger = logging.getLogger(__name__)
 
 
 class StockfishPlayerConfig(PlayerConfig):
@@ -25,8 +23,8 @@ class StockfishPlayerConfig(PlayerConfig):
 
     name: str = "Stockfish"
     color: bool = True
-    skill_level: int = 10
-    time_limit: float = 0.5
+    skill_level: int = STOCKFISH_SKILL_LEVEL
+    time_limit: float = STOCKFISH_TIME_LIMIT
 
 
 class StockfishPlayer(Player):
@@ -65,9 +63,7 @@ class StockfishPlayer(Player):
         # Initialize Stockfish engine
         self.engine = chess.engine.SimpleEngine.popen_uci(engine_path)
         self.engine.configure({"Skill Level": self.skill_level})
-        logger.info(
-            f"Initialized Stockfish player '{config.name}' with skill level {self.skill_level}"
-        )
+        print(f"Initialized Stockfish player '{config.name}' with skill level {self.skill_level}")
 
     def get_move(self, board: chess.Board) -> chess.Move | None:
         """Generate a move using Stockfish engine.
@@ -82,14 +78,14 @@ class StockfishPlayer(Player):
             return None
 
         if self.engine is None:
-            logger.error("Engine not initialized")
+            print("ERROR: Engine not initialized")
             return None
 
         try:
             result = self.engine.play(board, chess.engine.Limit(time=self.time_limit))
             return result.move
         except Exception as e:
-            logger.error(f"Stockfish error: {e}")
+            print(f"ERROR: Stockfish error: {e}")
             return None
 
     def close(self) -> None:
@@ -97,9 +93,9 @@ class StockfishPlayer(Player):
         if self.engine is not None:
             try:
                 self.engine.quit()
-                logger.info(f"Closed Stockfish engine for player '{self.config.name}'")
+                print(f"Closed Stockfish engine for player '{self.config.name}'")
             except Exception as e:
-                logger.warning(f"Error closing Stockfish engine: {e}")
+                print(f"WARNING: Error closing Stockfish engine: {e}")
             finally:
                 self.engine = None
 

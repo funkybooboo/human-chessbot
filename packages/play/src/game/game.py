@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import logging
 import os
 import time
 from typing import TYPE_CHECKING
@@ -12,11 +11,11 @@ import chess
 import chess.pgn
 from pydantic import BaseModel, Field
 
+from packages.play.src.constants import GAME_SAVE_DIR, GAME_TIME_LIMIT
+
 if TYPE_CHECKING:
     from packages.play.src.player.player import Player
     from packages.play.src.ui.ui import Ui
-
-logger = logging.getLogger(__name__)
 
 # Standard piece values for material counting
 PIECE_VALUES: dict[int, float] = {
@@ -37,8 +36,10 @@ class GameConfig(BaseModel):
         time_limit: Total time per player in seconds (0 = unlimited)
     """
 
-    save_dir: str = Field(default="games", description="Directory for saving PGN files")
-    time_limit: float = Field(default=600.0, ge=0, description="Time limit per player in seconds")
+    save_dir: str = Field(default=GAME_SAVE_DIR, description="Directory for saving PGN files")
+    time_limit: float = Field(
+        default=GAME_TIME_LIMIT, ge=0, description="Time limit per player in seconds"
+    )
 
 
 class Game:
@@ -76,7 +77,7 @@ class Game:
         self.ui: Ui | None = ui
         self.save_dir: str = config.save_dir
 
-        logger.info(
+        print(
             f"Game initialized: {white_player.config.name} (White) vs "
             f"{black_player.config.name} (Black), Time: {self.time_limit}s"
         )
@@ -102,10 +103,10 @@ class Game:
 
         # Check for timeout
         if self.white_time_left <= 0:
-            logger.info(f"White ({self.white_player.config.name}) ran out of time")
+            print(f"White ({self.white_player.config.name}) ran out of time")
             return self.black_player
         elif self.black_time_left <= 0:
-            logger.info(f"Black ({self.black_player.config.name}) ran out of time")
+            print(f"Black ({self.black_player.config.name}) ran out of time")
             return self.white_player
 
         return None
@@ -131,7 +132,6 @@ class Game:
         self.capture_square = move.to_square if is_capture else None
         self.current_player = self.white_player if self.board.turn else self.black_player
 
-        logger.debug(f"Move applied: {move_san}")
         return move_san
 
     def reset(self) -> None:
@@ -146,7 +146,7 @@ class Game:
         self.white_time_left = self.time_limit
         self.black_time_left = self.time_limit
         self._last_time_update = time.time()
-        logger.info("Game reset")
+        print("Game reset")
 
     def get_scores(self) -> tuple[float, float]:
         """Calculate material scores for both players.
@@ -234,5 +234,5 @@ class Game:
         with open(filename, "w", encoding="utf-8") as f:
             print(game_pgn, file=f)
 
-        logger.info(f"Game saved to {filename}")
+        print(f"Game saved to {filename}")
         return filename

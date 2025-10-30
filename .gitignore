@@ -3,7 +3,7 @@ data/
 papers/
 images/
 games/
-!packages/train/src/data
+*.png
 
 # Environment and secrets
 .env

@@ -1,16 +1,15 @@
 # Development Guide
 
+Detailed setup and workflow for contributors.
+
 ## Quick Start
 
 ```bash
-# Setup
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 pre-commit install
-
-# Verify
-pytest packages/*/tests/ -v  # Should pass 101 tests
+pytest packages/*/tests/ -v  # Verify setup
 ```
 
 ## Project Structure
@@ -19,37 +18,32 @@ pytest packages/*/tests/ -v  # Should pass 101 tests
 the_human_chess_bot/
 ├── packages/
 │   ├── play/       # Chess game application
-│   ├── convert/    # Data conversion utilities
-│   └── train/      # ML training (planned)
+│   ├── convert/    # PGN conversion utilities
+│   └── train/      # ML training and dataset ETL
 ├── docs/           # Documentation
-└── pyproject.toml  # Configuration
+└── pyproject.toml  # Project configuration
 ```
 
-## Development Workflow
+## Workflow
 
 ```bash
-# Create feature branch
-git checkout -b feature/my-feature
-
-# Make changes, then commit (pre-commit hooks run automatically)
+git checkout -b feature/my-feature  # Create branch
+# Make changes
 git add .
-git commit -m "Add feature X"
-
-# If hooks fail, they auto-fix issues - review and commit again
-git add .
-git commit -m "Add feature X"
+git commit -m "Add feature X"       # Pre-commit hooks run automatically
+# If hooks fail, review changes and recommit
 ```
 
 ## Tools
 
 ### Pre-commit Hooks
 
-Automatically run on commit. Manual usage:
+Auto-run on commit. Manual usage:
 
 ```bash
-pre-commit run --all-files              # Run all hooks
-pre-commit run --files path/to/file.py  # Run on specific files
-pre-commit autoupdate                   # Update hook versions
+pre-commit run --all-files              # All hooks
+pre-commit run --files path/to/file.py  # Specific files
+pre-commit autoupdate                   # Update versions
 ```
 
 ### Testing
@@ -58,91 +52,74 @@ pre-commit autoupdate                   # Update hook versions
 pytest packages/*/tests/ -v                  # All tests
 pytest packages/play/tests/ -v               # Specific package
 pytest --cov=packages --cov-report=html      # With coverage
-pytest -vv --tb=long                         # Verbose debugging
-pytest -s tests/path/test.py::test_function  # Specific test
+pytest -k "test_name"                        # By pattern
+pytest tests/path/test.py::test_function     # Specific test
 ```
 
-Target coverage: 80%+ overall, 90%+ for critical paths.
+**Coverage targets**: 80%+ overall, 90%+ for critical paths
 
 ### Linting & Formatting
 
 ```bash
-ruff check packages/           # Lint
-ruff check --fix packages/     # Lint with auto-fix
-black packages/                # Format
-isort packages/                # Sort imports
-mypy packages/                 # Type check
+ruff check packages/        # Lint
+ruff check --fix packages/  # Auto-fix
+black packages/             # Format
+isort packages/             # Sort imports
+mypy packages/              # Type check
 ```
 
 ## Code Style
 
-**Line length:** 100 characters
-**Python version:** 3.11+
-**Type hints:** Required
-**Docstrings:** Required for public APIs
+- **Line length**: 100 characters
+- **Python**: 3.11+
+- **Type hints**: Required for functions
+- **Docstrings**: Required for public APIs
 
 ### Import Order
 
 ```python
-# Standard library
+# 1. Standard library
 import logging
 from typing import Optional
 
-# Third-party
+# 2. Third-party
 import chess
 from pydantic import BaseModel
 
-# Local
+# 3. Local
 from packages.play.src.game.game import Game
 ```
 
-### Docstring Format
+### Docstrings (Google style)
 
 ```python
 def apply_move(self, move: chess.Move) -> str:
     """Apply a move to the board.
 
     Args:
-        move: The chess move to apply.
+        move: Chess move to apply
 
     Returns:
-        The move in SAN notation.
+        Move in SAN notation
 
     Raises:
-        ValueError: If move is illegal.
+        ValueError: If move is illegal
     """
-```
-
-### Error Handling
-
-Use specific exceptions:
-
-```python
-try:
-    engine.quit()
-except EngineTerminatedError as e:
-    logger.warning(f"Engine already closed: {e}")
 ```
 
 ## Common Tasks
 
 ### Add Dependency
 
-```toml
-# Edit pyproject.toml
-dependencies = [
-    "newpackage>=1.0.0",
-]
-```
-
+Edit `pyproject.toml` dependencies section, then:
 ```bash
 pip install -e ".[dev]"
 ```
 
 ### Add Module
 
-1. Create module file with docstrings and type hints
-2. Write tests
+1. Create module with type hints and docstrings
+2. Write tests in `tests/` directory
 3. Update package README
 
 ### Add Package
@@ -154,30 +131,17 @@ touch packages/mypackage/README.md
 
 ## Troubleshooting
 
-### Import Errors
-
-```bash
-pip install -e ".[dev]"
-```
-
-### Test Failures
-
-```bash
-rm -rf .pytest_cache
-pip install -e ".[dev]"
-pytest
-```
-
-### Formatting Conflicts
-
-```bash
-pre-commit run --all-files
-```
+| Issue | Solution |
+|-------|----------|
+| Import errors | `pip install -e ".[dev]"` |
+| Test failures | `rm -rf .pytest_cache && pip install -e ".[dev]"` |
+| Formatting conflicts | `pre-commit run --all-files` |
+| Type errors | `mypy packages/` to identify issues |
 
 ## Resources
 
-- [Black](https://black.readthedocs.io/)
-- [Ruff](https://docs.astral.sh/ruff/)
-- [mypy](http://mypy-lang.org/)
-- [pytest](https://docs.pytest.org/)
-- [Pre-commit](https://pre-commit.com/)
+- [Black](https://black.readthedocs.io/) - Code formatter
+- [Ruff](https://docs.astral.sh/ruff/) - Linter
+- [mypy](http://mypy-lang.org/) - Type checker
+- [pytest](https://docs.pytest.org/) - Testing framework
+- [Pre-commit](https://pre-commit.com/) - Git hooks

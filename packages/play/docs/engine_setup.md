@@ -1,22 +1,20 @@
 # Chess Engine Setup
 
+Setup guide for Stockfish and LCZero chess engines.
+
 ## Stockfish
 
 ### Installation
 
 ```bash
-# Linux (Debian/Ubuntu)
-sudo apt install stockfish
-
-# macOS
-brew install stockfish
-
+sudo apt install stockfish  # Linux (Debian/Ubuntu)
+brew install stockfish      # macOS
 # Windows: Download from stockfishchess.org and add to PATH
 ```
 
-Verify: `stockfish` (type `quit` to exit)
+Verify: Run `stockfish` (type `quit` to exit)
 
-### Usage
+### Configuration
 
 ```python
 from packages.play.src.player.stockfish_bot_player import StockfishPlayer, StockfishPlayerConfig
@@ -25,8 +23,8 @@ player = StockfishPlayer(
     config=StockfishPlayerConfig(
         name="Stockfish",
         color=True,
-        skill_level=10,  # 0-20
-        time_limit=0.5   # seconds per move
+        skill_level=10,  # 0-20 (20 = strongest)
+        time_limit=0.5   # Seconds per move
     )
 )
 ```
@@ -53,9 +51,9 @@ player = StockfishPlayer(
    cp latest.pb.gz ~/.local/share/lc0/networks/
    ```
 
-Verify: `lc0` (type `quit` to exit)
+Verify: Run `lc0` (type `quit` to exit)
 
-### Usage
+### Configuration
 
 ```python
 from packages.play.src.player.lc0_bot_player import Lc0BotPlayer, Lc0BotPlayerConfig
@@ -64,38 +62,31 @@ player = Lc0BotPlayer(
     config=Lc0BotPlayerConfig(
         name="Leela",
         color=False,
-        time_limit=1.0
+        time_limit=1.0  # Seconds per move
     )
 )
 ```
 
 ## Troubleshooting
 
-### Engine not found
-- Verify: `stockfish` or `lc0` in terminal
-- Check engine directory is in PATH
-- Restart terminal after PATH changes
-
-### LCZero network not found
-- Verify network file in `~/.local/share/lc0/networks/`
-- File format: `.pb.gz` or `.pb`
-- Try downloading a different network
-
-### Performance issues
-- **Stockfish**: Lower skill_level or increase time_limit
-- **LCZero**: Use smaller network or increase time_limit
+| Issue | Solution |
+|-------|----------|
+| Engine not found | Verify `stockfish` or `lc0` runs in terminal; check PATH |
+| LCZero network missing | Ensure `.pb.gz` file in `~/.local/share/lc0/networks/` |
+| Slow performance | Increase `time_limit` or lower Stockfish `skill_level` |
+| Path not updated | Restart terminal after PATH changes |
 
 ## Engine Comparison
 
 | Feature | Stockfish | LCZero |
 |---------|-----------|---------|
-| **Style** | Tactical, calculates deep | Positional, strategic |
-| **Strengths** | Concrete moves, endgames | Strategic positions, creativity |
-| **Resources** | CPU-based, moderate | CPU/GPU, can use GPU acceleration |
-| **Best for** | Tactical puzzles, analysis | Positional play, learning strategy |
+| **Style** | Tactical, deep calculation | Positional, strategic |
+| **Strengths** | Tactics, endgames | Positional play, creativity |
+| **Hardware** | CPU-based | CPU/GPU (GPU optional) |
+| **Best for** | Tactical analysis | Strategic learning |
 
 ## Resources
 
-- [Stockfish](https://github.com/official-stockfish/Stockfish)
+- [Stockfish GitHub](https://github.com/official-stockfish/Stockfish)
 - [LCZero Wiki](https://lczero.org/dev/wiki/)
-- [UCI Protocol](http://wbec-ridderkerk.nl/html/UCIProtocol.html)
+- [UCI Protocol Spec](http://wbec-ridderkerk.nl/html/UCIProtocol.html)

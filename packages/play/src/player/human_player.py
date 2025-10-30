@@ -35,7 +35,7 @@ class HumanPlayer(Player):
         super().__init__(config)
         self.pending_move: chess.Move | None = None
 
-    def get_move(self, board: chess.Board) -> chess.Move | None:
+    def get_move(self, board: chess.Board) -> chess.Move | None:  # noqa: ARG002
         """Return the pending move if available.
 
         The UI sets pending_move when the user selects a move.

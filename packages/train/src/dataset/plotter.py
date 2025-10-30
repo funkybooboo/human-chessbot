@@ -4,12 +4,14 @@ import sqlite3
 
 from matplotlib import pyplot as plt
 
+from packages.train.src.constants import DB_FILE, MAX_ELO, MIN_ELO
+
 
 def compute_histograms(
-    db_path: str,
+    db_path: str = DB_FILE,
     bin_size: int = 50,
-    min_val: int | None = 600,
-    max_val: int | None = 1900,
+    min_val: int | None = MIN_ELO,
+    max_val: int | None = MAX_ELO,
     batch_size: int = 10_000,
 ) -> tuple[list[int], list[int], list[float]]:
     """Compute histogram counts for white and black Elo ratings by streaming rows.
@@ -18,7 +20,7 @@ def compute_histograms(
     to 50-point bins covering 600..1900.
 
     Args:
-        db_path: Path to the sqlite database file.
+        db_path: Path to the SQLite database file.
         bin_size: Width of each bin (e.g. 50 for 50-point Elo bins).
         min_val: Minimum Elo to include (inclusive).
         max_val: Maximum Elo to include (exclusive upper edge).
@@ -34,7 +36,7 @@ def compute_histograms(
         cur = conn.cursor()
         # Efficiently compute min/max via SQL to avoid scanning everything in Python
         cur.execute(
-            "SELECT MIN(white_elo), MAX(white_elo), MIN(black_elo), MAX(black_elo) FROM state"
+            "SELECT MIN(white_elo), MAX(white_elo), MIN(black_elo), MAX(black_elo) FROM game_snapshots"
         )
         min_white, max_white, min_black, max_black = cur.fetchone()
 
@@ -62,7 +64,7 @@ def compute_histograms(
         black_counts = [0] * bins
 
         # Stream rows and increment bin counters
-        cur.execute("SELECT white_elo, black_elo FROM state")
+        cur.execute("SELECT white_elo, black_elo FROM game_snapshots")
         while True:
             rows = cur.fetchmany(batch_size)
             if not rows:
@@ -89,7 +91,7 @@ def compute_histograms(
 
 
 def plot_elo_distribution(
-    db_path: str,
+    db_path: str = DB_FILE,
     bins: int = 50,
     show: bool = True,
     save_path: str | None = None,
@@ -98,9 +100,15 @@ def plot_elo_distribution(
 
     This function delegates to `compute_histograms` so it never needs to hold all
     Elo values in Python memory.
+
+    Args:
+        db_path: Path to the SQLite database file.
+        bins: Bin width in Elo points.
+        show: Whether to display the plot.
+        save_path: Path to save the plot image (optional).
     """
     white_counts, black_counts, bin_edges = compute_histograms(
-        db_path, bin_size=bins, min_val=600, max_val=1900
+        db_path=db_path, bin_size=bins, min_val=600, max_val=1900
     )
 
     # compute bin centers and width
@@ -147,15 +155,24 @@ def plot_elo_distribution(
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Plot Elo distributions from the database")
-    p.add_argument("db", help="Path to sqlite database")
     p.add_argument(
         "-b", "--bins", type=int, default=50, help="Bin width in Elo points (default 50)"
     )
-    p.add_argument("--no-show", dest="show", action="store_false", help="Do not call plt.show()")
-    p.add_argument("-o", "--output", help="File path to save the plot (PNG, PDF, etc.)")
+    p.add_argument(
+        "--show",
+        dest="show",
+        action="store_true",
+        help="Display plot in GUI (default: save to file)",
+    )
+    p.add_argument(
+        "-o",
+        "--output",
+        default="elo_distribution.png",
+        help="File path to save the plot (default: elo_distribution.png)",
+    )
     return p.parse_args()
 
 
 if __name__ == "__main__":
     args = _parse_args()
-    plot_elo_distribution(args.db, bins=args.bins, show=args.show, save_path=args.output)
+    plot_elo_distribution(db_path=DB_FILE, bins=args.bins, show=args.show, save_path=args.output)
