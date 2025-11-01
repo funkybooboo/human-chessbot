@@ -2,7 +2,6 @@
 
 import sqlite3
 from pathlib import Path
-from typing import Any
 
 import chess
 import numpy as np
@@ -10,6 +9,7 @@ import torch
 from torch.utils.data import Dataset
 
 from packages.train.src.constants import DB_FILE
+from packages.train.src.dataset.repositories.game_snapshots import count_snapshots
 
 
 class GameSnapshotsDataset(Dataset):
@@ -54,79 +54,22 @@ class GameSnapshotsDataset(Dataset):
         chess.QUEEN: 4,
     }
 
-    def __init__(
-        self,
-        db_path: str | Path | None = None,
-        elo_filter: tuple[int, int] | None = None,
-        result_filter: list[str] | None = None,
-        limit: int | None = None,
-    ):
-        self.db_path = str(db_path) if db_path else DB_FILE
-        self.data = self._load_data(elo_filter, result_filter, limit)
-
-    def _load_data(
-        self,
-        elo_filter: tuple[int, int] | None,
-        result_filter: list[str] | None,
-        limit: int | None,
-    ) -> list[dict]:
-        """Load data from database with optional filters."""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        # Build query with filters
-        query = """
-            SELECT fen, move, white_elo, black_elo, result, turn
-            FROM game_snapshots
-            WHERE 1=1
-        """
-        params: list[int | str] = []
-
-        if elo_filter:
-            min_elo, max_elo = elo_filter
-            query += """
-                AND white_elo IS NOT NULL
-                AND black_elo IS NOT NULL
-                AND white_elo >= ?
-                AND white_elo <= ?
-                AND black_elo >= ?
-                AND black_elo <= ?
-            """
-            params.extend([min_elo, max_elo, min_elo, max_elo])
-
-        if result_filter:
-            placeholders = ",".join("?" * len(result_filter))
-            query += f" AND result IN ({placeholders})"
-            params.extend(result_filter)
-
-        if limit:
-            query += " LIMIT ?"
-            params.append(limit)
-
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        conn.close()
-
-        # Convert rows to dictionaries
-        data = []
-        for row in rows:
-            data.append(
-                {
-                    "fen": row[0],
-                    "move": row[1],
-                    "white_elo": row[2] if row[2] is not None else 0,
-                    "black_elo": row[3] if row[3] is not None else 0,
-                    "result": row[4],
-                    "turn": row[5],
-                }
+    def __init__(self, start_index: int, num_indexes: int, db_path: str | Path | None = None):
+        # check if num indexes is possible with size of current dataset if not throw an error
+        if count_snapshots() < start_index + num_indexes:
+            raise ValueError(
+                "num_indexes is larger than the size of the database\nIncrease the size of the database through the config file or decrease num_indexes"
             )
+        self.start_index = start_index
+        self.num_indexes = num_indexes
 
-        return data
+        self.db_path = str(db_path) if db_path else DB_FILE
 
     def _fen_to_tensor(self, fen: str) -> torch.Tensor:
         """Convert FEN string to tensor representation.
 
-        Creates a 8x8x12 tensor where each channel represents a piece type/color:
+        Creates a 1d flattened tensor of a chess board where each tile represents
+        a piece type/color:
         - Channels 0-5: White pieces (pawn, knight, bishop, rook, queen, king)
         - Channels 6-11: Black pieces (pawn, knight, bishop, rook, queen, king)
 
@@ -134,7 +77,7 @@ class GameSnapshotsDataset(Dataset):
             fen: FEN string representation of board
 
         Returns:
-            Tensor of shape (8, 8, 12)
+            Tensor of shape (8*8*12,)
         """
         board = chess.Board(fen)
         tensor = np.zeros((8, 8, 12), dtype=np.float32)
@@ -153,6 +96,9 @@ class GameSnapshotsDataset(Dataset):
                     piece_idx += 6
 
                 tensor[rank, file, piece_idx] = 1.0
+
+        # flatten tensor
+        tensor = tensor.reshape(8 * 8 * 12)
 
         return torch.from_numpy(tensor)
 
@@ -191,21 +137,27 @@ class GameSnapshotsDataset(Dataset):
         return onehot
 
     def _normalize_elo(self, white_elo: int, black_elo: int) -> torch.Tensor:
-        """Normalize ELO ratings by dividing by 3000.
+        """Normalize ELO ratings through z normalization based on values precomputed from all
+        of the data from 2013
 
         Args:
             white_elo: White player's ELO
             black_elo: Black player's ELO
 
         Returns:
-            Normalized tensor (2,) for [white_elo / 3000, black_elo / 3000]
+            Normalized tensor (2,) [white_elo, black_elo]
         """
-        return torch.tensor([white_elo / 3000.0, black_elo / 3000.0], dtype=torch.float32)
 
-    def _encode_move(
-        self, fen: str, move_san: str
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Encode move as one-hot vectors for source, target, and promotion.
+        standard_deviation = 185.80054702756055
+        mean = 1638.43153
+
+        black_z_norm = (black_elo - mean) / standard_deviation
+        white_z_norm = (white_elo - mean) / standard_deviation
+
+        return torch.tensor([white_z_norm, black_z_norm], dtype=torch.float32)
+
+    def _encode_move(self, fen: str, move_san: str) -> tuple[int, int]:
+        """Encode move as indexes of start and end postions and promotion index.
 
         Args:
             fen: FEN string of the position before the move
@@ -213,43 +165,40 @@ class GameSnapshotsDataset(Dataset):
 
         Returns:
             Tuple of (from_square, to_square, promotion) tensors
-            - from_square: (64,) one-hot tensor
-            - to_square: (64,) one-hot tensor
-            - promotion: (5,) one-hot tensor for [none, N, B, R, Q]
+            - move: int index stores both start and end positions
+            - promotion: int one-hot tensor for [none, N, B, R, Q]
         """
         try:
             board = chess.Board(fen)
             # Parse SAN move to get UCI move
             move = board.parse_san(move_san)
 
-            # Encode from square (0-63)
-            from_square = torch.zeros(64, dtype=torch.float32)
-            from_square[move.from_square] = 1.0
+            # get the rows and columsn for the start and end positions
+            start_col = move.from_square % 8
+            start_row = move.from_square // 8
 
-            # Encode to square (0-63)
-            to_square = torch.zeros(64, dtype=torch.float32)
-            to_square[move.to_square] = 1.0
+            end_col = move.to_square % 8
+            end_row = move.to_square // 8
 
-            # Encode promotion piece
-            promotion = torch.zeros(5, dtype=torch.float32)
+            # encode the values by using base 8 numering giving each id a digit place (stored in base 10)
+            move_index = start_col
+            move_index += 8 * start_row
+            move_index += 8**2 * end_col
+            move_index += 8**3 * end_row
+
             promotion_idx = self.PROMOTION_PIECES.get(move.promotion, 0)
-            promotion[promotion_idx] = 1.0
 
-            return from_square, to_square, promotion
+            return move_index, promotion_idx
 
         except (ValueError, AssertionError):
             # If move parsing fails, return zeros
-            from_square = torch.zeros(64, dtype=torch.float32)
-            to_square = torch.zeros(64, dtype=torch.float32)
-            promotion = torch.zeros(5, dtype=torch.float32)
-            promotion[0] = 1.0  # No promotion
-            return from_square, to_square, promotion
+            return 0, 0
 
     def __len__(self) -> int:
         """Return the number of samples in the dataset."""
-        return len(self.data)
+        return self.num_indexes
 
-    def __getitem__(self, idx: int) -> dict[str, Any]:
+    def __getitem__(self, idx: int):
         """Get a single sample from the dataset.
 
         Args:
@@ -258,26 +207,50 @@ class GameSnapshotsDataset(Dataset):
         Returns:
             Dictionary containing encoded tensors ready for training
         """
-        sample = self.data[idx]
+        # to avoid the off by one error caused by the database starting at 1
+        idx += self.start_index + 1
+
+        # # retrieve index from the database slice
+        with sqlite3.connect(self.db_path) as conn:
+            query = "SELECT fen, move, white_elo, black_elo, result, turn FROM game_snapshots WHERE id=?"
+            cur = conn.cursor()
+            row = cur.execute(query, (idx,)).fetchone()
+            if row is None:
+                raise IndexError(f"No row at offset {self.start_index + idx}.")
+            # convert query to dict
+            data = {
+                "fen": row[0],
+                "move": row[1],
+                "white_elo": row[2] if row[2] is not None else 0,
+                "black_elo": row[3] if row[3] is not None else 0,
+                "result": row[4],
+                "turn": row[5],
+            }
+
+        # # convert to tensorwhite_elo
 
         # Encode all features
-        from_sq, to_sq, promo = self._encode_move(sample["fen"], sample["move"])
 
-        return {
-            "board": self._fen_to_tensor(sample["fen"]),
-            "turn": self._encode_turn(sample["turn"]),
-            "elo": self._normalize_elo(sample["white_elo"], sample["black_elo"]),
-            "result": self._encode_result(sample["result"], sample["turn"]),
-            "move_from": from_sq,
-            "move_to": to_sq,
-            "promotion": promo,
-        }
+        # _encode_move
+        chosen_move, promo = self._encode_move(data["fen"], data["move"])
+        turn = self._encode_turn(data["turn"])
+
+        # elos
+        elos = self._normalize_elo(data["white_elo"], data["black_elo"])
+
+        # board
+        board = self._fen_to_tensor(data["fen"])
+
+        # combine to 1d tensor and output
+        labels = torch.cat((elos, turn, board), 0)
+
+        return labels, (chosen_move, promo)
 
 
 if __name__ == "__main__":
     # Example 1: Basic dataset
     print("\n1. Creating basic dataset...")
-    dataset = GameSnapshotsDataset(limit=100)
+    dataset = GameSnapshotsDataset(start_index=0, num_indexes=100)
     print(f"   Dataset size: {len(dataset)} positions")
 
     if len(dataset) > 0:
@@ -299,7 +272,7 @@ if __name__ == "__main__":
 
     # Example 2: Filtered dataset (high-rated games only)
     print("\n2. Creating filtered dataset (ELO 1000-2000)...")
-    dataset_filtered = GameSnapshotsDataset(elo_filter=(1000, 2000), limit=50)
+    dataset_filtered = GameSnapshotsDataset(start_index=0, num_indexes=50)
     print(f"   Filtered dataset size: {len(dataset_filtered)} positions")
 
     # Example 3: Use with PyTorch DataLoader

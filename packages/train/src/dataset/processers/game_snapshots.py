@@ -19,6 +19,8 @@ def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
     if game is None:
         return  # skip invalid PGNs
 
+    date_time = game.headers.get("UTCDate", "") + game.headers.get("UTCTime", "")
+
     white_elo = _safe_int(game.headers.get("WhiteElo"))
     black_elo = _safe_int(game.headers.get("BlackElo"))
     result = game.headers.get("Result", "*")
@@ -32,7 +34,7 @@ def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
         board.push(move)
 
         fen = board.fen()
-        board_hash = _compute_board_hash(fen, turn, san_move)
+        board_hash = _compute_board_hash(white_elo, black_elo, fen, turn, san_move, date_time)
 
         yield GameSnapshot(
             raw_game_id=raw_game.id if raw_game.id is not None else 0,  # link back to raw game
@@ -49,9 +51,11 @@ def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
         move_number += 1
 
 
-def _compute_board_hash(fen: str, turn: str, move: str) -> str:
-    """Compute a SHA-256 hash of the FEN, turn, and move."""
-    data = f"{fen}-{turn}-{move}".encode()
+def _compute_board_hash(
+    white_elo: int | None, black_elo: int | None, fen: str, turn: str, move: str, date_time: str
+) -> str:
+    """Compute a SHA-256 hash of the player elos, FEN, turn, move, and date_time"""
+    data = f"{white_elo}-{black_elo}-{fen}-{turn}-{move}-{date_time}".encode()
     return hashlib.sha256(data).hexdigest()
 
 

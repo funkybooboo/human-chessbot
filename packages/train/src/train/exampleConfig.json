@@ -1,0 +1,24 @@
+{
+  "hyperparameters": {
+    "learning_rates": [],
+    "decay_rates": [],
+    "betas": [],
+    "momentums": [],
+    "num_epochs": 100,
+    "batch_size": 0,
+    "num_workers": 0
+  },
+  "database_info": {
+    "num_indexes": 100000,
+    "max_size_gb": 10,
+    "data_split": {
+      "train": 0.8,
+      "validation": 0.1,
+      "test": 0.1
+    }
+  },
+  "checkpoints": {
+    "directory": "",
+    "auto_save_interval": 0
+  }
+}
