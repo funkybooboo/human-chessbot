@@ -9,7 +9,7 @@ from packages.train.src.dataset.repositories.files_metadata import (
     fetch_files_metadata_under_size,
     mark_file_as_processed,
 )
-from packages.train.src.dataset.repositories.raw_games import raw_game_exists, save_raw_game
+from packages.train.src.dataset.repositories.raw_games import save_raw_game
 
 
 def fetch_new_raw_games(
@@ -53,12 +53,11 @@ def fetch_new_raw_games(
 
             decompressed_text = buffer.decode("utf-8")
 
-        # Save all raw games to DB first, skipping duplicates
+        # Save all raw games to DB
         for pgn in _split_pgn_text_into_games(decompressed_text):
             raw_game = RawGame(file_id=file_meta.id, pgn=pgn, processed=False)
-            if not raw_game_exists(raw_game.pgn_hash):
-                save_raw_game(raw_game)
-                yield raw_game
+            save_raw_game(raw_game)
+            yield raw_game
 
         mark_file_as_processed(file_meta)
 

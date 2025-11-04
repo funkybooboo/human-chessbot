@@ -21,7 +21,6 @@ def create_game_snapshots_table():
         turn TEXT,
         move TEXT,
         fen TEXT,
-        board_hash TEXT NOT NULL UNIQUE,
         white_elo INTEGER,
         black_elo INTEGER,
         result TEXT,
@@ -50,23 +49,18 @@ def game_snapshots_table_exists() -> bool:
 
 
 def save_snapshot(snapshot: GameSnapshot):
-    """Insert a single GameSnapshot if it doesn't already exist (by board_hash)."""
+    """Insert a single GameSnapshot."""
     with sqlite3.connect(DB_FILE, isolation_level=None) as conn:
         c = conn.cursor()
-
-        # Skip if snapshot already exists
-        c.execute(f"SELECT 1 FROM {_TABLE_NAME} WHERE board_hash = ?", (snapshot.board_hash,))
-        if c.fetchone():
-            return
 
         # Insert
         c.execute(
             f"""
         INSERT INTO {_TABLE_NAME} (
             raw_game_id, move_number, turn, move, fen,
-            board_hash, white_elo, black_elo, result
+            white_elo, black_elo, result
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?, ?
         )
         """,
             (
@@ -75,7 +69,6 @@ def save_snapshot(snapshot: GameSnapshot):
                 snapshot.turn,
                 snapshot.move,
                 snapshot.fen,
-                snapshot.board_hash,
                 snapshot.white_elo,
                 snapshot.black_elo,
                 snapshot.result,
@@ -87,6 +80,44 @@ def save_snapshots(snapshots: Iterable[GameSnapshot]):
     """Insert multiple snapshots one by one."""
     for snapshot in snapshots:
         save_snapshot(snapshot)
+
+
+def save_snapshots_batch(snapshots: list[GameSnapshot]):
+    """
+    Insert multiple snapshots in a single transaction for better performance.
+    """
+    if not snapshots:
+        return
+
+    with sqlite3.connect(DB_FILE) as conn:
+        c = conn.cursor()
+
+        # Prepare data for batch insert
+        data = [
+            (
+                snapshot.raw_game_id,
+                snapshot.move_number,
+                snapshot.turn,
+                snapshot.move,
+                snapshot.fen,
+                snapshot.white_elo,
+                snapshot.black_elo,
+                snapshot.result,
+            )
+            for snapshot in snapshots
+        ]
+
+        # Batch insert all snapshots
+        c.executemany(
+            f"""
+            INSERT INTO {_TABLE_NAME} (
+                raw_game_id, move_number, turn, move, fen,
+                white_elo, black_elo, result
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            data,
+        )
+        conn.commit()
 
 
 def count_snapshots() -> int:
@@ -110,8 +141,7 @@ def _row_to_snapshot(row: tuple) -> GameSnapshot:
         turn=row[3],
         move=row[4],
         fen=row[5],
-        board_hash=row[6],
-        white_elo=row[7],
-        black_elo=row[8],
-        result=row[9],
+        white_elo=row[6],
+        black_elo=row[7],
+        result=row[8],
     )

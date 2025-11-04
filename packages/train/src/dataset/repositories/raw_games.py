@@ -8,7 +8,7 @@ _TABLE_NAME = "raw_games"
 
 
 def create_raw_games_table():
-    """Create the 'raw_games' table if it does not exist, with unique PGN hash."""
+    """Create the 'raw_games' table if it does not exist."""
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     c.execute(
@@ -17,7 +17,6 @@ def create_raw_games_table():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         file_id INTEGER,
         pgn TEXT NOT NULL,
-        pgn_hash TEXT NOT NULL UNIQUE,
         processed INTEGER DEFAULT 0,
         FOREIGN KEY(file_id) REFERENCES files_metadata(id)
     )
@@ -44,20 +43,16 @@ def raw_games_table_exists() -> bool:
 
 
 def save_raw_game(game: RawGame):
-    """Insert a single RawGame into the database if it doesn’t already exist."""
+    """Insert a single RawGame into the database."""
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    c.execute(f"SELECT 1 FROM {_TABLE_NAME} WHERE pgn_hash = ?", (game.pgn_hash,))
-    if c.fetchone():
-        conn.close()
-        return  # skip duplicate
 
     c.execute(
         f"""
-    INSERT INTO {_TABLE_NAME} (file_id, pgn, pgn_hash, processed)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO {_TABLE_NAME} (file_id, pgn, processed)
+    VALUES (?, ?, ?)
     """,
-        (game.file_id, game.pgn, game.pgn_hash, int(getattr(game, "processed", 0))),
+        (game.file_id, game.pgn, int(getattr(game, "processed", 0))),
     )
     conn.commit()
     conn.close()
@@ -67,6 +62,37 @@ def save_raw_games(games: list[RawGame]):
     """Insert multiple RawGame objects."""
     for game in games:
         save_raw_game(game)
+
+
+def save_raw_games_batch(games: list[RawGame]):
+    """
+    Insert multiple RawGame objects in a single transaction for better performance.
+    """
+    if not games:
+        return
+
+    with sqlite3.connect(DB_FILE) as conn:
+        c = conn.cursor()
+
+        # Prepare data for batch insert
+        data = [
+            (
+                game.file_id,
+                game.pgn,
+                int(getattr(game, "processed", 0)),
+            )
+            for game in games
+        ]
+
+        # Batch insert all games
+        c.executemany(
+            f"""
+            INSERT INTO {_TABLE_NAME} (file_id, pgn, processed)
+            VALUES (?, ?, ?)
+            """,
+            data,
+        )
+        conn.commit()
 
 
 def mark_raw_game_as_processed(game: RawGame):
@@ -86,11 +112,11 @@ def fetch_raw_games(file_id: int | None = None) -> list[RawGame]:
     try:
         if file_id is not None:
             c.execute(
-                f"SELECT id, file_id, pgn, pgn_hash, processed FROM {_TABLE_NAME} WHERE file_id = ?",
+                f"SELECT id, file_id, pgn, processed FROM {_TABLE_NAME} WHERE file_id = ?",
                 (file_id,),
             )
         else:
-            c.execute(f"SELECT id, file_id, pgn, pgn_hash, processed FROM {_TABLE_NAME}")
+            c.execute(f"SELECT id, file_id, pgn, processed FROM {_TABLE_NAME}")
         rows = c.fetchall()
     finally:
         conn.close()
@@ -104,12 +130,12 @@ def fetch_unprocessed_raw_games(file_id: int | None = None) -> Iterator[RawGame]
     try:
         if file_id is not None:
             c.execute(
-                f"SELECT id, file_id, pgn, pgn_hash, processed FROM {_TABLE_NAME} WHERE file_id = ? AND processed = 0",
+                f"SELECT id, file_id, pgn, processed FROM {_TABLE_NAME} WHERE file_id = ? AND processed = 0",
                 (file_id,),
             )
         else:
             c.execute(
-                f"SELECT id, file_id, pgn, pgn_hash, processed FROM {_TABLE_NAME} WHERE processed = 0"
+                f"SELECT id, file_id, pgn, processed FROM {_TABLE_NAME} WHERE processed = 0"
             )
         rows = c.fetchall()
     finally:
@@ -118,17 +144,6 @@ def fetch_unprocessed_raw_games(file_id: int | None = None) -> Iterator[RawGame]
         yield _row_to_raw_game(row)
 
 
-def raw_game_exists(pgn_hash: str) -> bool:
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    try:
-        c.execute("SELECT 1 FROM raw_games WHERE pgn_hash = ?", (pgn_hash,))
-        exists = c.fetchone() is not None
-    finally:
-        conn.close()
-    return exists
-
-
 def _row_to_raw_game(row: tuple) -> RawGame:
     """Convert a database row tuple into a RawGame object."""
-    return RawGame(id=row[0], file_id=row[1], pgn=row[2], processed=bool(row[4]))
+    return RawGame(id=row[0], file_id=row[1], pgn=row[2], processed=bool(row[3]))

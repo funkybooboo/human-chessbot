@@ -28,6 +28,7 @@ DEFAULT_SNAPSHOTS_THRESHOLD = int(os.getenv("DEFAULT_SNAPSHOTS_THRESHOLD", "1000
 DEFAULT_MAX_SIZE_GB = float(os.getenv("DEFAULT_MAX_SIZE_GB", "10.0"))
 DEFAULT_PRINT_INTERVAL = int(os.getenv("DEFAULT_PRINT_INTERVAL", "1000"))
 DEFAULT_MAX_FILES = int(os.getenv("DEFAULT_MAX_FILES", "5"))
+DEFAULT_BATCH_SIZE = int(os.getenv("DEFAULT_BATCH_SIZE", "1000"))  # Batch size for database writes
 
 # ELO rating ranges for filtering
 MIN_ELO = int(os.getenv("MIN_ELO", "600"))
