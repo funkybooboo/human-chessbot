@@ -1,11 +1,7 @@
 """Tests for game_snapshots processer."""
 
 from packages.train.src.dataset.models.raw_game import RawGame
-from packages.train.src.dataset.processers.game_snapshots import (
-    _compute_board_hash,
-    _safe_int,
-    raw_game_to_snapshots,
-)
+from packages.train.src.dataset.processers.game_snapshots import _safe_int, raw_game_to_snapshots
 
 
 class TestSafeInt:
@@ -34,46 +30,6 @@ class TestSafeInt:
     def test_zero(self):
         """Test converting zero."""
         assert _safe_int("0") == 0
-
-
-class TestComputeBoardHash:
-    """Tests for _compute_board_hash function."""
-
-    def test_deterministic(self):
-        """Test that hash is deterministic."""
-        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        hash1 = _compute_board_hash(fen, "w", "e4")
-        hash2 = _compute_board_hash(fen, "w", "e4")
-        assert hash1 == hash2
-
-    def test_different_boards(self):
-        """Test that different FEN positions produce different hashes."""
-        fen1 = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        fen2 = "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"
-
-        hash1 = _compute_board_hash(fen1, "w", "e4")
-        hash2 = _compute_board_hash(fen2, "w", "e4")
-        assert hash1 != hash2
-
-    def test_different_turns(self):
-        """Test that different turns produce different hashes."""
-        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        hash1 = _compute_board_hash(fen, "w", "e4")
-        hash2 = _compute_board_hash(fen, "b", "e4")
-        assert hash1 != hash2
-
-    def test_different_moves(self):
-        """Test that different moves produce different hashes."""
-        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        hash1 = _compute_board_hash(fen, "w", "e4")
-        hash2 = _compute_board_hash(fen, "w", "d4")
-        assert hash1 != hash2
-
-    def test_hash_length(self):
-        """Test that hash is SHA-256 (64 hex chars)."""
-        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        hash_val = _compute_board_hash(fen, "w", "e4")
-        assert len(hash_val) == 64
 
 
 class TestRawGameToSnapshots:
@@ -180,20 +136,6 @@ class TestRawGameToSnapshots:
 
         # FENs should be different after each move
         assert snapshots[0].fen != snapshots[1].fen
-
-    def test_unique_board_hashes(self):
-        """Test that each snapshot has a unique board hash."""
-        pgn = """[Event "Test"]
-[White "P1"]
-[Black "P2"]
-[Result "1-0"]
-
-1. e4 e5 2. Nf3 Nc6 1-0"""
-        game = RawGame(id=1, pgn=pgn)
-        snapshots = list(raw_game_to_snapshots(game))
-
-        hashes = [s.board_hash for s in snapshots]
-        assert len(hashes) == len(set(hashes))  # All unique
 
     def test_invalid_pgn(self):
         """Test handling of invalid PGN."""

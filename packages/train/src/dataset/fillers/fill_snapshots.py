@@ -4,6 +4,7 @@ from packages.train.src.constants import (
     DEFAULT_PRINT_INTERVAL,
     DEFAULT_SNAPSHOTS_THRESHOLD,
 )
+from packages.train.src.dataset.models.game_snapshot import GameSnapshot
 from packages.train.src.dataset.processers.game_snapshots import raw_game_to_snapshots
 from packages.train.src.dataset.repositories.database import initialize_database
 from packages.train.src.dataset.repositories.files_metadata import (
@@ -44,7 +45,7 @@ def fill_database_with_snapshots(
     else:
         print("File metadata already exists.")
 
-    snapshot_batch = []
+    snapshot_batch: list[GameSnapshot] = []
     snapshot_count = count_snapshots()
     last_print_count = snapshot_count
 

@@ -69,7 +69,6 @@ class TestGameSnapshotsTable:
                 turn="w",
                 move="e4",
                 fen=fen,
-                board_hash="hash1",
                 white_elo=1500,
                 black_elo=1500,
                 result="1-0",
@@ -78,51 +77,15 @@ class TestGameSnapshotsTable:
 
             conn = sqlite3.connect(temp_db)
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM game_snapshots WHERE board_hash = ?", ("hash1",))
+            cursor.execute(
+                "SELECT * FROM game_snapshots WHERE raw_game_id = ? AND move_number = ?", (1, 1)
+            )
             row = cursor.fetchone()
             conn.close()
 
             assert row is not None
             assert row[4] == "e4"  # move
             assert row[5] == fen  # fen
-
-    def test_save_snapshot_duplicate(self, temp_db):
-        """Test that duplicate board hashes are not inserted."""
-        with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-            snapshot1 = GameSnapshot(
-                raw_game_id=1,
-                move_number=1,
-                turn="w",
-                move="e4",
-                fen=fen,
-                board_hash="hash1",
-                white_elo=1500,
-                black_elo=1500,
-                result="1-0",
-            )
-            snapshot2 = GameSnapshot(
-                raw_game_id=1,
-                move_number=1,
-                turn="w",
-                move="e4",
-                fen=fen,
-                board_hash="hash1",
-                white_elo=1500,
-                black_elo=1500,
-                result="1-0",
-            )
-
-            game_snapshots.save_snapshot(snapshot1)
-            game_snapshots.save_snapshot(snapshot2)  # Should be skipped
-
-            conn = sqlite3.connect(temp_db)
-            cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM game_snapshots")
-            count = cursor.fetchone()[0]
-            conn.close()
-
-            assert count == 1
 
     def test_save_multiple_snapshots(self, temp_db):
         """Test saving multiple snapshots."""
@@ -135,7 +98,6 @@ class TestGameSnapshotsTable:
                     turn="w",
                     move=f"move{i}",
                     fen=fen,
-                    board_hash=f"hash{i}",
                     white_elo=1500,
                     black_elo=1500,
                     result="1-0",
@@ -163,7 +125,6 @@ class TestGameSnapshotsTable:
                     turn="w",
                     move=f"move{i}",
                     fen=fen,
-                    board_hash=f"hash{i}",
                     white_elo=1500,
                     black_elo=1500,
                     result="1-0",
@@ -195,7 +156,6 @@ class TestGameSnapshotsTable:
                 turn="w",
                 move="e4",
                 fen=fen1,
-                board_hash="hash1",
                 white_elo=1500,
                 black_elo=1500,
                 result="1-0",
@@ -206,7 +166,6 @@ class TestGameSnapshotsTable:
                 turn="b",
                 move="e5",
                 fen=fen2,
-                board_hash="hash2",
                 white_elo=1500,
                 black_elo=1500,
                 result="1-0",
@@ -218,9 +177,13 @@ class TestGameSnapshotsTable:
             # Verify FENs were saved correctly
             conn = sqlite3.connect(temp_db)
             cursor = conn.cursor()
-            cursor.execute("SELECT fen FROM game_snapshots WHERE board_hash = ?", ("hash1",))
+            cursor.execute(
+                "SELECT fen FROM game_snapshots WHERE raw_game_id = ? AND move_number = ?", (1, 1)
+            )
             saved_fen1 = cursor.fetchone()[0]
-            cursor.execute("SELECT fen FROM game_snapshots WHERE board_hash = ?", ("hash2",))
+            cursor.execute(
+                "SELECT fen FROM game_snapshots WHERE raw_game_id = ? AND move_number = ?", (1, 2)
+            )
             saved_fen2 = cursor.fetchone()[0]
             conn.close()
 
@@ -237,7 +200,6 @@ class TestGameSnapshotsTable:
                 turn="w",
                 move="e4",
                 fen=fen,
-                board_hash="hash1",
                 white_elo=None,
                 black_elo=None,
                 result="1-0",
@@ -247,7 +209,8 @@ class TestGameSnapshotsTable:
             conn = sqlite3.connect(temp_db)
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT white_elo, black_elo FROM game_snapshots WHERE board_hash = ?", ("hash1",)
+                "SELECT white_elo, black_elo FROM game_snapshots WHERE raw_game_id = ? AND move_number = ?",
+                (1, 1),
             )
             row = cursor.fetchone()
             conn.close()
@@ -268,7 +231,6 @@ class TestGameSnapshotsTable:
                     turn="w",
                     move=f"move{i}",
                     fen=fen,
-                    board_hash=f"hash{i}",
                     white_elo=1500,
                     black_elo=1500,
                     result=result,
@@ -293,7 +255,6 @@ class TestGameSnapshotsTable:
                 turn="w",
                 move="Kg3",
                 fen=fen,
-                board_hash="hash1",
                 white_elo=1500,
                 black_elo=1500,
                 result="1-0",
@@ -303,7 +264,8 @@ class TestGameSnapshotsTable:
             conn = sqlite3.connect(temp_db)
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT move_number FROM game_snapshots WHERE board_hash = ?", ("hash1",)
+                "SELECT move_number FROM game_snapshots WHERE raw_game_id = ? AND move_number = ?",
+                (1, 150),
             )
             move_num = cursor.fetchone()[0]
             conn.close()
@@ -323,7 +285,6 @@ class TestGameSnapshotsTable:
                     turn="w",
                     move=move,
                     fen=fen,
-                    board_hash=f"hash{i}",
                     white_elo=1500,
                     black_elo=1500,
                     result="1-0",

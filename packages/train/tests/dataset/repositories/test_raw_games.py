@@ -50,29 +50,12 @@ class TestRawGamesTable:
 
             conn = sqlite3.connect(temp_db)
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM raw_games WHERE pgn_hash = ?", (game.pgn_hash,))
+            cursor.execute("SELECT * FROM raw_games WHERE pgn = ?", (game.pgn,))
             row = cursor.fetchone()
             conn.close()
 
             assert row is not None
             assert row[2] == "1. e4 e5"  # pgn
-
-    def test_save_raw_game_duplicate(self, temp_db):
-        """Test that duplicate PGN hashes are not inserted."""
-        with patch("packages.train.src.dataset.repositories.raw_games.DB_FILE", temp_db):
-            game1 = RawGame(file_id=1, pgn="1. e4 e5", processed=False)
-            game2 = RawGame(file_id=1, pgn="1. e4 e5", processed=False)
-
-            raw_games.save_raw_game(game1)
-            raw_games.save_raw_game(game2)  # Should be skipped
-
-            conn = sqlite3.connect(temp_db)
-            cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) FROM raw_games")
-            count = cursor.fetchone()[0]
-            conn.close()
-
-            assert count == 1
 
     def test_save_multiple_raw_games(self, temp_db):
         """Test saving multiple raw games."""
@@ -97,7 +80,7 @@ class TestRawGamesTable:
             # Get the game with ID
             conn = sqlite3.connect(temp_db)
             cursor = conn.cursor()
-            cursor.execute("SELECT id FROM raw_games WHERE pgn_hash = ?", (game.pgn_hash,))
+            cursor.execute("SELECT id FROM raw_games WHERE pgn = ?", (game.pgn,))
             game_id = cursor.fetchone()[0]
             conn.close()
 
@@ -152,24 +135,13 @@ class TestRawGamesTable:
             # Mark one as processed
             conn = sqlite3.connect(temp_db)
             cursor = conn.cursor()
-            cursor.execute(
-                "UPDATE raw_games SET processed = 1 WHERE pgn_hash = ?", (game1.pgn_hash,)
-            )
+            cursor.execute("UPDATE raw_games SET processed = 1 WHERE pgn = ?", (game1.pgn,))
             conn.commit()
             conn.close()
 
             unprocessed = list(raw_games.fetch_unprocessed_raw_games())
             assert len(unprocessed) == 1
             assert unprocessed[0].pgn == "1. d4 d5"
-
-    def test_raw_game_exists(self, temp_db):
-        """Test checking if a game exists by hash."""
-        with patch("packages.train.src.dataset.repositories.raw_games.DB_FILE", temp_db):
-            game = RawGame(file_id=1, pgn="1. e4 e5", processed=False)
-            raw_games.save_raw_game(game)
-
-            assert raw_games.raw_game_exists(game.pgn_hash) is True
-            assert raw_games.raw_game_exists("nonexistent_hash") is False
 
     def test_empty_pgn(self, temp_db):
         """Test saving a game with empty PGN."""
