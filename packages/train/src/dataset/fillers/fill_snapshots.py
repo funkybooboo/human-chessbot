@@ -51,6 +51,53 @@ def _split_pgn_text_into_games(pgn_text: str) -> Iterator[str]:
         yield raw.strip()
 
 
+def _download_and_save_lichess_file(file_meta: FileMetadata) -> int:
+    """
+    Download and save a lichess file to the database.
+
+    Args:
+        file_meta: Metadata for the file to download
+
+    Returns:
+        Number of raw games saved
+
+    Raises:
+        RuntimeError: If download fails
+    """
+    print(
+        f"Downloading {file_meta.filename} "
+        f"({file_meta.size_gb} GB, ~{file_meta.games} games)..."
+    )
+    response = requests.get(file_meta.url, stream=True)
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"Failed to download {file_meta.filename} (status {response.status_code})"
+        )
+
+    decompressor = zstd.ZstdDecompressor()
+    with decompressor.stream_reader(response.raw) as reader:
+        buffer = bytearray()
+        while True:
+            chunk = reader.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            buffer.extend(chunk)
+
+        decompressed_text = buffer.decode("utf-8")
+
+    print(f"Download complete. Saving raw games to database...")
+
+    # Save all raw games to DB
+    raw_games_count = 0
+    for pgn in _split_pgn_text_into_games(decompressed_text):
+        raw_game = RawGame(file_id=file_meta.id, pgn=pgn, processed=False)
+        save_raw_game(raw_game)
+        raw_games_count += 1
+
+    print(f"Saved {raw_games_count} raw games.")
+    return raw_games_count
+
+
 def fill_database_with_snapshots_from_lichess_file(
     filename: str,
     batch_size: int = DEFAULT_BATCH_SIZE,
@@ -120,37 +167,10 @@ def fill_database_with_snapshots_from_lichess_file(
         return
 
     # File metadata exists but no raw games - download it
-    print(
-        f"Downloading {existing_file.filename} "
-        f"({existing_file.size_gb} GB, ~{existing_file.games} games)..."
-    )
-    response = requests.get(existing_file.url, stream=True)
-    if response.status_code != 200:
-        raise RuntimeError(f"Failed to download {filename} (status {response.status_code})")
-
-    decompressor = zstd.ZstdDecompressor()
-    with decompressor.stream_reader(response.raw) as reader:
-        buffer = bytearray()
-        while True:
-            chunk = reader.read(CHUNK_SIZE)
-            if not chunk:
-                break
-            buffer.extend(chunk)
-
-        decompressed_text = buffer.decode("utf-8")
-
-    print(f"Download complete. Saving raw games to database...")
-
-    # Save all raw games to DB
-    raw_games_count = 0
-    for pgn in _split_pgn_text_into_games(decompressed_text):
-        raw_game = RawGame(file_id=existing_file.id, pgn=pgn, processed=False)
-        save_raw_game(raw_game)
-        raw_games_count += 1
-
-    print(f"Saved {raw_games_count} raw games. Processing into snapshots...")
+    _download_and_save_lichess_file(existing_file)
 
     # Process the raw games into snapshots
+    print(f"Processing into snapshots...")
     _process_file_snapshots(existing_file, batch_size=batch_size, print_interval=print_interval)
 
     # Mark file as processed

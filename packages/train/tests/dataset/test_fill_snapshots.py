@@ -314,16 +314,14 @@ class TestFillDatabaseWithSnapshotsFromLichessFile:
     @patch("packages.train.src.dataset.fillers.fill_snapshots.files_metadata_exist")
     @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_all_files_metadata")
     @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_unprocessed_raw_games")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.requests.get")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.save_raw_game")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots._download_and_save_lichess_file")
     @patch("packages.train.src.dataset.fillers.fill_snapshots._process_file_snapshots")
     @patch("packages.train.src.dataset.fillers.fill_snapshots.mark_file_as_processed")
     def test_downloads_and_processes_new_file(
         self,
         mock_mark_processed,
         mock_process,
-        mock_save_game,
-        mock_get,
+        mock_download,
         mock_unprocessed_games,
         mock_fetch_all,
         mock_metadata_exist,
@@ -346,22 +344,13 @@ class TestFillDatabaseWithSnapshotsFromLichessFile:
         # No unprocessed games exist (file hasn't been downloaded yet)
         mock_unprocessed_games.return_value = iter([])
 
-        # Mock GET request for file download
-        mock_file_response = MagicMock()
-        mock_file_response.status_code = 200
-
-        # Mock compressed PGN data
-        import zstandard as zstd
-
-        pgn_text = '[Event "Test"]\n\n1. e4 e5'
-        compressed_data = zstd.ZstdCompressor().compress(pgn_text.encode("utf-8"))
-        mock_file_response.raw.read = lambda size: compressed_data if size else b""
-        mock_get.return_value = mock_file_response
+        # Mock download returns count of games
+        mock_download.return_value = 100
 
         result = fill_database_with_snapshots_from_lichess_file("lichess_db_standard_rated_2024-01.pgn.zst")
 
         assert result is None
-        mock_save_game.assert_called()
+        mock_download.assert_called_once_with(file_meta)
         mock_process.assert_called_once()
         mock_mark_processed.assert_called_once()
 
@@ -369,9 +358,9 @@ class TestFillDatabaseWithSnapshotsFromLichessFile:
     @patch("packages.train.src.dataset.fillers.fill_snapshots.files_metadata_exist")
     @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_all_files_metadata")
     @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_unprocessed_raw_games")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.requests.get")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots._download_and_save_lichess_file")
     def test_download_failure_raises_error(
-        self, mock_get, mock_unprocessed_games, mock_fetch_all, mock_metadata_exist, _mock_init
+        self, mock_download, mock_unprocessed_games, mock_fetch_all, mock_metadata_exist, _mock_init
     ):
         """Test that function raises error when download fails."""
         mock_metadata_exist.return_value = True
@@ -390,10 +379,8 @@ class TestFillDatabaseWithSnapshotsFromLichessFile:
         # No unprocessed games exist
         mock_unprocessed_games.return_value = iter([])
 
-        # Mock file download fails
-        mock_file_response = MagicMock()
-        mock_file_response.status_code = 500
-        mock_get.return_value = mock_file_response
+        # Mock download fails
+        mock_download.side_effect = RuntimeError("Failed to download test_file.pgn.zst (status 500)")
 
         with pytest.raises(RuntimeError, match="Failed to download"):
             fill_database_with_snapshots_from_lichess_file("test_file.pgn.zst")
