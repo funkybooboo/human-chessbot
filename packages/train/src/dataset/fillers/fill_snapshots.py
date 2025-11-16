@@ -55,7 +55,6 @@ def fill_database_with_snapshots(
                 print("WARNING: No new files or games available. Stopping.")
                 break
 
-            save_raw_games_batch(new_games_batch)
             print(f"New {len(new_games_batch)} raw games saved. Continuing processing...")
 
     print(f"Completed. Total snapshots: {processor.get_snapshot_count()}")
