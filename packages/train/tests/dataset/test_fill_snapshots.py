@@ -190,6 +190,42 @@ class TestFillDatabaseWithSnapshotsFromLichessFile:
 
     @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
     @patch("packages.train.src.dataset.fillers.fill_snapshots.files_metadata_exist")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.save_files_metadata")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_files_metadata")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_all_files_metadata")
+    def test_fetches_metadata_when_table_empty(
+        self,
+        mock_fetch_all,
+        mock_fetch_metadata,
+        mock_save_metadata,
+        mock_metadata_exist,
+        _mock_init,
+    ):
+        """Test that function fetches and saves metadata when table is empty."""
+        # First call: metadata doesn't exist
+        # Second call: metadata exists after being saved
+        mock_metadata_exist.side_effect = [False, True]
+
+        # Mock metadata to fetch
+        file_meta = FileMetadata(
+            id=1,
+            url="https://database.lichess.org/standard/lichess_db_standard_rated_2024-01.pgn.zst",
+            filename="lichess_db_standard_rated_2024-01.pgn.zst",
+            games=1000,
+            size_gb=0.5,
+            processed=True,
+        )
+        mock_fetch_metadata.return_value = iter([file_meta])
+        mock_fetch_all.return_value = [file_meta]
+
+        result = fill_database_with_snapshots_from_lichess_file("lichess_db_standard_rated_2024-01.pgn.zst")
+
+        assert result is None
+        mock_fetch_metadata.assert_called_once()
+        mock_save_metadata.assert_called_once()
+
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots.files_metadata_exist")
     @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_all_files_metadata")
     def test_file_already_processed_noop(self, mock_fetch_all, mock_metadata_exist, _mock_init):
         """Test that function does nothing when file is already processed (noop/idempotent)."""
