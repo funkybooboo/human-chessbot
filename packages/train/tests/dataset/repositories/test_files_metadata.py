@@ -252,3 +252,73 @@ class TestFilesMetadataTable:
         with patch("packages.train.src.dataset.repositories.db_utils.DB_FILE", temp_db):
             result = files_metadata.files_metadata_exist()
             assert result is True
+
+    def test_fetch_file_metadata_by_filename(self, temp_db):
+        """Test fetching FileMetadata by filename."""
+        with patch("packages.train.src.dataset.repositories.files_metadata.DB_FILE", temp_db):
+            metadata = FileMetadata(
+                url="https://example.com/test.pgn",
+                filename="test.pgn",
+                games=100,
+                size_gb=0.5,
+            )
+            files_metadata.save_file_metadata(metadata)
+
+            result = files_metadata.fetch_file_metadata_by_filename("test.pgn")
+            assert result is not None
+            assert result.filename == "test.pgn"
+            assert result.games == 100
+
+    def test_fetch_file_metadata_by_filename_not_found(self, temp_db):
+        """Test fetching FileMetadata by filename when not found."""
+        with patch("packages.train.src.dataset.repositories.files_metadata.DB_FILE", temp_db):
+            result = files_metadata.fetch_file_metadata_by_filename("nonexistent.pgn")
+            assert result is None
+
+    def test_ensure_metadata_exists_when_empty(self, temp_db):
+        """Test ensure_metadata_exists fetches when database is empty."""
+        with (
+            patch("packages.train.src.dataset.repositories.files_metadata.DB_FILE", temp_db),
+            patch("packages.train.src.dataset.repositories.db_utils.DB_FILE", temp_db),
+            patch(
+                "packages.train.src.dataset.requesters.file_metadata.fetch_files_metadata"
+            ) as mock_fetch,
+        ):
+            mock_fetch.return_value = [
+                FileMetadata(
+                    url="https://example.com/file.pgn",
+                    filename="file.pgn",
+                    games=100,
+                    size_gb=0.5,
+                )
+            ]
+
+            files_metadata.ensure_metadata_exists()
+
+            mock_fetch.assert_called_once()
+
+    def test_ensure_metadata_exists_when_populated(self, temp_db):
+        """Test ensure_metadata_exists skips fetch when database has data."""
+        with (
+            patch("packages.train.src.dataset.repositories.files_metadata.DB_FILE", temp_db),
+            patch("packages.train.src.dataset.repositories.db_utils.DB_FILE", temp_db),
+        ):
+            # Add some data first
+            metadata = FileMetadata(
+                url="https://example.com/file.pgn",
+                filename="file.pgn",
+                games=100,
+                size_gb=0.5,
+            )
+            files_metadata.save_file_metadata(metadata)
+
+        with (
+            patch("packages.train.src.dataset.repositories.files_metadata.DB_FILE", temp_db),
+            patch("packages.train.src.dataset.repositories.db_utils.DB_FILE", temp_db),
+            patch(
+                "packages.train.src.dataset.requesters.file_metadata.fetch_files_metadata"
+            ) as mock_fetch,
+        ):
+            files_metadata.ensure_metadata_exists()
+
+            mock_fetch.assert_not_called()
