@@ -462,7 +462,7 @@ class Gui(Ui):
 
     def _scale_images(self) -> None:
         """Scale piece images to current tile size."""
-        resample = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
+        resample = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS  # type: ignore[attr-defined]
         self.piece_images_scaled = {
             sym: ImageTk.PhotoImage(img.resize((self.tile_size, self.tile_size), resample))
             for sym, img in self.piece_images_raw.items()
