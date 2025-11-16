@@ -11,9 +11,7 @@ from packages.train.src.dataset.repositories.files_metadata import (
     fetch_file_metadata_by_filename,
     mark_file_as_processed,
 )
-from packages.train.src.dataset.repositories.raw_games import (
-    fetch_unprocessed_raw_games,
-)
+from packages.train.src.dataset.repositories.raw_games import fetch_unprocessed_raw_games
 from packages.train.src.dataset.requesters.raw_games import (
     fetch_new_raw_games,
     fetch_raw_games_from_file,
