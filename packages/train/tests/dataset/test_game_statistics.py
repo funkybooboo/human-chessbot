@@ -51,27 +51,13 @@ def sample_raw_game(sample_pgn):
 
 
 @pytest.fixture
-def temp_db():
-    """Create a temporary database for testing."""
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
-    db_path = temp_file.name
-    temp_file.close()
-    
-    # Monkey-patch DB_FILE constant
+def temp_db(tmp_path, monkeypatch):
+    """Create a temporary database for testing using tmp_path and monkeypatch."""
+    db_path = tmp_path / "test.db"
     import packages.train.src.dataset.repositories.game_statistics as stats_repo
-    original_db = stats_repo.DB_FILE
-    stats_repo.DB_FILE = db_path
-    
-    # Create table
+    monkeypatch.setattr(stats_repo, "DB_FILE", str(db_path))
     create_game_statistics_table()
-    
-    yield db_path
-    
-    # Cleanup
-    stats_repo.DB_FILE = original_db
-    Path(db_path).unlink(missing_ok=True)
-
-
+    yield str(db_path)
 def test_extract_statistics_from_raw_game(sample_raw_game):
     """Test extracting statistics from a raw game."""
     stats = extract_statistics_from_raw_game(sample_raw_game)
