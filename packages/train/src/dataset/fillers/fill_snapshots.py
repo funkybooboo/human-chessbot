@@ -51,13 +51,13 @@ def _split_pgn_text_into_games(pgn_text: str) -> Iterator[str]:
         yield raw.strip()
 
 
-def download_and_process_lichess_file(
+def fill_database_from_lichess_file(
     filename: str,
     batch_size: int = DEFAULT_BATCH_SIZE,
     print_interval: int = DEFAULT_PRINT_INTERVAL,
 ) -> None:
     """
-    Download and process a specific lichess file into the database.
+    Fill the database from a specific lichess file.
 
     Args:
         filename: Name of the lichess file (e.g., "lichess_db_standard_rated_2024-01.pgn.zst")

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from packages.train.src.dataset.fillers.fill_snapshots import (
-    download_and_process_lichess_file,
+    fill_database_from_lichess_file,
     fill_database_with_snapshots,
 )
 from packages.train.src.dataset.models.file_metadata import FileMetadata
@@ -185,8 +185,8 @@ class TestFillDatabaseWithSnapshots:
         assert mock_count.call_count >= 1
 
 
-class TestDownloadAndProcessLichessFile:
-    """Tests for download_and_process_lichess_file function."""
+class TestFillDatabaseFromLichessFile:
+    """Tests for fill_database_from_lichess_file function."""
 
     @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
     @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_all_files_metadata")
@@ -203,7 +203,7 @@ class TestDownloadAndProcessLichessFile:
         )
         mock_fetch_all.return_value = [processed_file]
 
-        result = download_and_process_lichess_file("lichess_db_standard_rated_2024-01.pgn.zst")
+        result = fill_database_from_lichess_file("lichess_db_standard_rated_2024-01.pgn.zst")
 
         assert result is None
         _mock_init.assert_called_once()
@@ -226,7 +226,7 @@ class TestDownloadAndProcessLichessFile:
         )
         mock_fetch_all.return_value = [unprocessed_file]
 
-        result = download_and_process_lichess_file("lichess_db_standard_rated_2024-01.pgn.zst")
+        result = fill_database_from_lichess_file("lichess_db_standard_rated_2024-01.pgn.zst")
 
         assert result is None
         mock_process.assert_called_once_with(
@@ -246,7 +246,7 @@ class TestDownloadAndProcessLichessFile:
         mock_head.return_value = mock_response
 
         with pytest.raises(ValueError, match="not found"):
-            download_and_process_lichess_file("nonexistent_file.pgn.zst")
+            fill_database_from_lichess_file("nonexistent_file.pgn.zst")
 
     @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
     @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_all_files_metadata")
@@ -295,7 +295,7 @@ class TestDownloadAndProcessLichessFile:
         # Mock to return counts first, then file data
         mock_get.side_effect = [mock_counts_response, mock_file_response]
 
-        result = download_and_process_lichess_file("lichess_db_standard_rated_2024-01.pgn.zst")
+        result = fill_database_from_lichess_file("lichess_db_standard_rated_2024-01.pgn.zst")
 
         assert result is None
         mock_save_meta.assert_called_once()
@@ -329,7 +329,7 @@ class TestDownloadAndProcessLichessFile:
         mock_get.side_effect = [mock_counts_response, mock_file_response]
 
         with pytest.raises(RuntimeError, match="Failed to download"):
-            download_and_process_lichess_file("test_file.pgn.zst")
+            fill_database_from_lichess_file("test_file.pgn.zst")
 
 
 class TestFillSnapshotsIntegration:
