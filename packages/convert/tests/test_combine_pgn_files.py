@@ -84,9 +84,9 @@ class TestPGNCombineConfig:
         """Test that string paths are converted to Path objects."""
         output_path = tmp_path / "output.pgn"
         config = PGNCombineConfig(
-            pgn1_path=str(sample_pgn1),
-            pgn2_path=str(sample_pgn2),
-            output_path=str(output_path),
+            pgn1_path=str(sample_pgn1),  # type: ignore[arg-type]
+            pgn2_path=str(sample_pgn2),  # type: ignore[arg-type]
+            output_path=str(output_path),  # type: ignore[arg-type]
         )
         assert isinstance(config.pgn1_path, Path)
         assert isinstance(config.pgn2_path, Path)

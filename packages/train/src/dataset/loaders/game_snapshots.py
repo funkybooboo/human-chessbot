@@ -95,7 +95,7 @@ class GameSnapshotsDataset(Dataset):
                 tensor[rank, file, piece_idx] = 1.0
 
         # flatten tensor
-        tensor = tensor.reshape(8 * 8 * 12)
+        tensor = tensor.reshape(8 * 8 * 12)  # type: ignore[assignment]
 
         return torch.from_numpy(tensor)
 

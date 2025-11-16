@@ -22,7 +22,7 @@ def fetch_raw_games_from_file(file_meta: FileMetadata) -> Iterator[RawGame]:
         return
 
     decompressor = zstd.ZstdDecompressor()
-    with decompressor.stream_reader(response.raw) as reader:
+    with decompressor.stream_reader(response.raw) as reader:  # type: ignore[arg-type]
         buffer = bytearray()
         while True:
             chunk = reader.read(CHUNK_SIZE)
