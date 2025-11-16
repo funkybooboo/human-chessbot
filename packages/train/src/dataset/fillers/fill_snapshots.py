@@ -66,71 +66,65 @@ def fill_database_with_snapshots_from_lichess_file(
 
     Process:
         1. Initialize database if needed
-        2. Check if file already exists in database
-        3. If already processed, noop (skip)
-        4. If exists but not processed, process existing raw games
-        5. If doesn't exist, download and process the file
+        2. Ensure lichess file metadata table is populated
+        3. Validate that the requested file exists in lichess metadata
+        4. If already processed, noop (skip)
+        5. If exists but not processed, process existing raw games
+        6. If doesn't exist locally, download and process the file
+
+    Raises:
+        ValueError: If the filename is not a valid lichess file
     """
     initialize_database()
+
+    # Always ensure file metadata table is populated
+    if not files_metadata_exist():
+        print("Fetching lichess file metadata...")
+        save_files_metadata(fetch_files_metadata())
+        print("Metadata saved.")
 
     # Construct the full URL for the file
     file_url = urljoin(LICHESS_BASE_URL, filename)
 
-    # Check if this file already exists in the database
+    # Check if this file exists in the metadata table (validates it's a real lichess file)
     existing_file = None
     for file_meta in fetch_all_files_metadata():
         if file_meta.url == file_url or file_meta.filename == filename:
             existing_file = file_meta
             break
 
-    # If file already processed, noop
-    if existing_file and existing_file.processed:
+    # If file not found in metadata, it's not a valid lichess file
+    if not existing_file:
+        raise ValueError(
+            f"File '{filename}' is not a valid lichess file. "
+            "Check available files in the metadata table."
+        )
+
+    # If file already processed, noop (idempotent)
+    if existing_file.processed:
         print(f"File '{filename}' already processed. Skipping.")
         return
 
-    # If file exists but not processed, we'll process the raw games that are already downloaded
-    if existing_file and not existing_file.processed:
-        print(f"File '{filename}' found in database but not processed. Processing existing raw games...")
+    # Check if raw games exist but haven't been processed into snapshots
+    unprocessed_games = list(fetch_unprocessed_raw_games(file_id=existing_file.id))
+    if unprocessed_games:
+        print(
+            f"File '{filename}' has {len(unprocessed_games)} unprocessed games. "
+            "Processing into snapshots..."
+        )
         _process_file_snapshots(
             existing_file, batch_size=batch_size, print_interval=print_interval
         )
+        mark_file_as_processed(existing_file)
+        print(f"File '{filename}' fully processed.")
         return
 
-    # File doesn't exist - download it
-    print(f"Downloading file: {filename}...")
-
-    # Get file metadata from lichess
-    response = requests.head(file_url)
-    if response.status_code != 200:
-        raise ValueError(f"File '{filename}' not found at {file_url} (status {response.status_code})")
-
-    size_gb = int(response.headers.get("Content-Length", 0)) / (1024**3)
-
-    # Try to get game count from counts.txt
-    counts_url = urljoin(LICHESS_BASE_URL, "counts.txt")
-    counts_resp = requests.get(counts_url)
-    game_count = 0
-    if counts_resp.status_code == 200:
-        for line in counts_resp.text.strip().splitlines():
-            parts = line.split()
-            if len(parts) == 2 and parts[0] == filename:
-                game_count = int(parts[1].replace(",", ""))
-                break
-
-    # Create and save file metadata
-    file_meta = FileMetadata(
-        url=file_url,
-        filename=filename,
-        games=game_count,
-        size_gb=round(size_gb, 2),
-        processed=False,
+    # File metadata exists but no raw games - download it
+    print(
+        f"Downloading {existing_file.filename} "
+        f"({existing_file.size_gb} GB, ~{existing_file.games} games)..."
     )
-    save_file_metadata(file_meta)
-    print(f"File metadata saved: {file_meta.filename} ({file_meta.size_gb} GB, ~{file_meta.games} games)")
-
-    # Download and decompress the file
-    print(f"Downloading and decompressing {filename}...")
-    response = requests.get(file_url, stream=True)
+    response = requests.get(existing_file.url, stream=True)
     if response.status_code != 200:
         raise RuntimeError(f"Failed to download {filename} (status {response.status_code})")
 
@@ -150,17 +144,17 @@ def fill_database_with_snapshots_from_lichess_file(
     # Save all raw games to DB
     raw_games_count = 0
     for pgn in _split_pgn_text_into_games(decompressed_text):
-        raw_game = RawGame(file_id=file_meta.id, pgn=pgn, processed=False)
+        raw_game = RawGame(file_id=existing_file.id, pgn=pgn, processed=False)
         save_raw_game(raw_game)
         raw_games_count += 1
 
     print(f"Saved {raw_games_count} raw games. Processing into snapshots...")
 
     # Process the raw games into snapshots
-    _process_file_snapshots(file_meta, batch_size=batch_size, print_interval=print_interval)
+    _process_file_snapshots(existing_file, batch_size=batch_size, print_interval=print_interval)
 
     # Mark file as processed
-    mark_file_as_processed(file_meta)
+    mark_file_as_processed(existing_file)
     print(f"File '{filename}' fully processed.")
 
 
