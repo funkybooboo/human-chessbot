@@ -190,8 +190,8 @@ class TestDownloadAndProcessLichessFile:
 
     @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
     @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_all_files_metadata")
-    def test_file_already_processed_returns_zero(self, mock_fetch_all, _mock_init):
-        """Test that function returns 0 when file is already processed (noop)."""
+    def test_file_already_processed_noop(self, mock_fetch_all, _mock_init):
+        """Test that function does nothing when file is already processed (noop)."""
         # Mock existing file that is already processed
         processed_file = FileMetadata(
             id=1,
@@ -205,7 +205,7 @@ class TestDownloadAndProcessLichessFile:
 
         result = download_and_process_lichess_file("lichess_db_standard_rated_2024-01.pgn.zst")
 
-        assert result == 0
+        assert result is None
         _mock_init.assert_called_once()
 
     @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
@@ -225,11 +225,10 @@ class TestDownloadAndProcessLichessFile:
             processed=False,
         )
         mock_fetch_all.return_value = [unprocessed_file]
-        mock_process.return_value = 100
 
         result = download_and_process_lichess_file("lichess_db_standard_rated_2024-01.pgn.zst")
 
-        assert result == 100
+        assert result is None
         mock_process.assert_called_once_with(
             unprocessed_file, batch_size=1000, print_interval=1000
         )
@@ -296,12 +295,9 @@ class TestDownloadAndProcessLichessFile:
         # Mock to return counts first, then file data
         mock_get.side_effect = [mock_counts_response, mock_file_response]
 
-        # Mock processing returns 50 snapshots
-        mock_process.return_value = 50
-
         result = download_and_process_lichess_file("lichess_db_standard_rated_2024-01.pgn.zst")
 
-        assert result == 50
+        assert result is None
         mock_save_meta.assert_called_once()
         mock_save_game.assert_called()
         mock_process.assert_called_once()

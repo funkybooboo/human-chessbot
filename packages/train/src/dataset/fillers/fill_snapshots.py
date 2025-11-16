@@ -55,7 +55,7 @@ def download_and_process_lichess_file(
     filename: str,
     batch_size: int = DEFAULT_BATCH_SIZE,
     print_interval: int = DEFAULT_PRINT_INTERVAL,
-) -> int:
+) -> None:
     """
     Download and process a specific lichess file into the database.
 
@@ -64,13 +64,10 @@ def download_and_process_lichess_file(
         batch_size: Number of snapshots to batch before writing to DB
         print_interval: Print progress every N snapshots
 
-    Returns:
-        Number of snapshots created from this file, or 0 if file was already processed
-
     Process:
         1. Initialize database if needed
         2. Check if file already exists in database
-        3. If already processed, return 0 (noop)
+        3. If already processed, noop (skip)
         4. If exists but not processed, process existing raw games
         5. If doesn't exist, download and process the file
     """
@@ -89,14 +86,15 @@ def download_and_process_lichess_file(
     # If file already processed, noop
     if existing_file and existing_file.processed:
         print(f"File '{filename}' already processed. Skipping.")
-        return 0
+        return
 
     # If file exists but not processed, we'll process the raw games that are already downloaded
     if existing_file and not existing_file.processed:
         print(f"File '{filename}' found in database but not processed. Processing existing raw games...")
-        return _process_file_snapshots(
+        _process_file_snapshots(
             existing_file, batch_size=batch_size, print_interval=print_interval
         )
+        return
 
     # File doesn't exist - download it
     print(f"Downloading file: {filename}...")
@@ -159,22 +157,18 @@ def download_and_process_lichess_file(
     print(f"Saved {raw_games_count} raw games. Processing into snapshots...")
 
     # Process the raw games into snapshots
-    snapshots_created = _process_file_snapshots(
-        file_meta, batch_size=batch_size, print_interval=print_interval
-    )
+    _process_file_snapshots(file_meta, batch_size=batch_size, print_interval=print_interval)
 
     # Mark file as processed
     mark_file_as_processed(file_meta)
-    print(f"File '{filename}' fully processed. Created {snapshots_created} snapshots.")
-
-    return snapshots_created
+    print(f"File '{filename}' fully processed.")
 
 
 def _process_file_snapshots(
     file_meta: FileMetadata,
     batch_size: int = DEFAULT_BATCH_SIZE,
     print_interval: int = DEFAULT_PRINT_INTERVAL,
-) -> int:
+) -> None:
     """
     Process all unprocessed raw games from a specific file into snapshots.
 
@@ -182,9 +176,6 @@ def _process_file_snapshots(
         file_meta: The file metadata object
         batch_size: Number of snapshots to batch before writing
         print_interval: Print progress every N snapshots
-
-    Returns:
-        Number of snapshots created
     """
     snapshot_batch: list[GameSnapshot] = []
     snapshots_created = 0
@@ -213,8 +204,6 @@ def _process_file_snapshots(
     if snapshot_batch:
         save_snapshots_batch(snapshot_batch)
         snapshots_created += len(snapshot_batch)
-
-    return snapshots_created
 
 
 def fill_database_with_snapshots(
