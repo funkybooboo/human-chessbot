@@ -35,20 +35,10 @@ from packages.train.src.dataset.repositories.raw_games import (
     save_raw_games_batch,
 )
 from packages.train.src.dataset.requesters.file_metadata import fetch_files_metadata
-from packages.train.src.dataset.requesters.raw_games import fetch_new_raw_games
-
-
-def _split_pgn_text_into_games(pgn_text: str) -> Iterator[str]:
-    """
-    Split a PGN file into individual games.
-    Each game starts with '[Event '.
-    Yields games one by one.
-    """
-    raw_games = pgn_text.strip().split("\n\n[Event ")
-    for i, raw in enumerate(raw_games):
-        if i > 0:
-            raw = "[Event " + raw
-        yield raw.strip()
+from packages.train.src.dataset.requesters.raw_games import (
+    _split_pgn_text_into_games,
+    fetch_new_raw_games,
+)
 
 
 def _download_and_save_lichess_file(file_meta: FileMetadata) -> int:
