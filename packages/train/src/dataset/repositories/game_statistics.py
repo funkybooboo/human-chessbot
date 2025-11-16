@@ -1,5 +1,5 @@
 import sqlite3
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterator
 
 from packages.train.src.constants import DB_FILE
 from packages.train.src.dataset.models.game_statistics import GameStatistics
