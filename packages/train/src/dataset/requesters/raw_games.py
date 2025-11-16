@@ -51,8 +51,7 @@ def fetch_new_raw_games(
     files_to_download = unprocessed_files[:max_files]
 
     for file_meta in files_to_download:
-        for game in fetch_raw_games_from_file(file_meta):
-            yield game
+        yield from fetch_raw_games_from_file(file_meta)
         mark_file_as_processed(file_meta)
 
 

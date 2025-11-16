@@ -38,9 +38,11 @@ class TestGameConfig:
 
     def test_default_values(self):
         """Test default configuration values."""
+        from packages.play.src.constants import GAME_SAVE_DIR, GAME_TIME_LIMIT
+
         config = GameConfig()
-        assert config.save_dir == "games"
-        assert config.time_limit == 600.0
+        assert config.save_dir == GAME_SAVE_DIR
+        assert config.time_limit == GAME_TIME_LIMIT
 
     def test_custom_values(self):
         """Test custom configuration values."""

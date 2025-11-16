@@ -122,7 +122,10 @@ class SnapshotBatchProcessor:
         self._snapshot_count = count_snapshots()
         self._batch = []
 
-        if self._snapshot_count // self.print_interval > self._last_print_count // self.print_interval:
+        if (
+            self._snapshot_count // self.print_interval
+            > self._last_print_count // self.print_interval
+        ):
             print(f"{self._snapshot_count} snapshots saved...")
             self._last_print_count = self._snapshot_count
 
