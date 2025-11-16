@@ -1,4 +1,8 @@
-"""Tests for GameSnapshot model."""
+"""Tests for GameSnapshot model.
+
+Note: white_elo, black_elo, and result are now stored in the GameStatistics table.
+These tests focus on the core GameSnapshot fields: raw_game_id, move_number, turn, move, and fen.
+"""
 
 from packages.train.src.dataset.models.game_snapshot import GameSnapshot
 
@@ -15,34 +19,12 @@ class TestGameSnapshot:
             turn="w",
             move="e4",
             fen=fen,
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
         )
         assert snapshot.raw_game_id == 1
         assert snapshot.move_number == 1
         assert snapshot.turn == "w"
         assert snapshot.move == "e4"
         assert snapshot.fen == fen
-        assert snapshot.white_elo == 1500
-        assert snapshot.black_elo == 1500
-        assert snapshot.result == "1-0"
-
-    def test_creation_with_none_elo(self):
-        """Test creating GameSnapshot with None ELO values."""
-        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        snapshot = GameSnapshot(
-            raw_game_id=1,
-            move_number=1,
-            turn="w",
-            move="e4",
-            fen=fen,
-            white_elo=None,
-            black_elo=None,
-            result="1-0",
-        )
-        assert snapshot.white_elo is None
-        assert snapshot.black_elo is None
 
     def test_fen_string(self):
         """Test creating GameSnapshot with different FEN positions."""
@@ -54,9 +36,6 @@ class TestGameSnapshot:
             turn="w",
             move="e4",
             fen=fen,
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
         )
         assert snapshot.fen == fen
         assert "rnbqkbnr" in snapshot.fen
@@ -70,9 +49,6 @@ class TestGameSnapshot:
             turn="w",
             move="e4",
             fen=fen,
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
         )
         s2 = GameSnapshot(
             raw_game_id=1,
@@ -80,9 +56,6 @@ class TestGameSnapshot:
             turn="w",
             move="e4",
             fen=fen,
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
         )
         assert s1 == s2
 
@@ -96,9 +69,6 @@ class TestGameSnapshot:
             turn="w",
             move="e4",
             fen=fen1,
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
         )
         s2 = GameSnapshot(
             raw_game_id=1,
@@ -106,9 +76,6 @@ class TestGameSnapshot:
             turn="w",
             move="d4",
             fen=fen2,
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
         )
         assert s1 != s2
 
@@ -121,62 +88,9 @@ class TestGameSnapshot:
             turn="b",
             move="e5",
             fen=fen,
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
         )
         assert snapshot.turn == "b"
         assert snapshot.move_number == 2
-
-    def test_different_results(self):
-        """Test GameSnapshot with different game results."""
-        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        results = ["1-0", "0-1", "1/2-1/2", "*"]
-
-        for result in results:
-            snapshot = GameSnapshot(
-                raw_game_id=1,
-                move_number=1,
-                turn="w",
-                move="e4",
-                fen=fen,
-                white_elo=1500,
-                black_elo=1500,
-                result=result,
-            )
-            assert snapshot.result == result
-
-    def test_high_elo_ratings(self):
-        """Test GameSnapshot with high ELO ratings."""
-        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        snapshot = GameSnapshot(
-            raw_game_id=1,
-            move_number=1,
-            turn="w",
-            move="e4",
-            fen=fen,
-            white_elo=2800,
-            black_elo=2750,
-            result="1-0",
-        )
-        assert snapshot.white_elo == 2800
-        assert snapshot.black_elo == 2750
-
-    def test_low_elo_ratings(self):
-        """Test GameSnapshot with low ELO ratings."""
-        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        snapshot = GameSnapshot(
-            raw_game_id=1,
-            move_number=1,
-            turn="w",
-            move="e4",
-            fen=fen,
-            white_elo=400,
-            black_elo=500,
-            result="1-0",
-        )
-        assert snapshot.white_elo == 400
-        assert snapshot.black_elo == 500
 
     def test_late_game_move(self):
         """Test GameSnapshot with high move number."""
@@ -187,9 +101,6 @@ class TestGameSnapshot:
             turn="w",
             move="Kg3",
             fen=fen,
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
         )
         assert snapshot.move_number == 75
 
@@ -205,27 +116,8 @@ class TestGameSnapshot:
                 turn="w",
                 move=move,
                 fen=fen,
-                white_elo=1500,
-                black_elo=1500,
-                result="1-0",
             )
             assert snapshot.move == move
-
-    def test_mixed_elo_availability(self):
-        """Test GameSnapshot with one ELO missing."""
-        fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-        snapshot = GameSnapshot(
-            raw_game_id=1,
-            move_number=1,
-            turn="w",
-            move="e4",
-            fen=fen,
-            white_elo=1500,
-            black_elo=None,
-            result="1-0",
-        )
-        assert snapshot.white_elo == 1500
-        assert snapshot.black_elo is None
 
     def test_repr(self):
         """Test string representation of GameSnapshot."""
@@ -236,9 +128,6 @@ class TestGameSnapshot:
             turn="w",
             move="e4",
             fen=fen,
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
         )
         repr_str = repr(snapshot)
         assert "GameSnapshot" in repr_str

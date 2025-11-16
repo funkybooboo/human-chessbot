@@ -58,7 +58,7 @@ class TestRawGameToSnapshots:
         assert snapshots[2].turn == "w"
 
     def test_game_metadata(self):
-        """Test that game metadata is preserved."""
+        """Test that game ID is preserved in snapshots."""
         pgn = """[Event "Test Event"]
 [Site "Test Site"]
 [White "Magnus"]
@@ -73,40 +73,7 @@ class TestRawGameToSnapshots:
 
         snapshot = snapshots[0]
         assert snapshot.raw_game_id == 42
-        assert snapshot.white_elo == 2800
-        assert snapshot.black_elo == 2750
-        assert snapshot.result == "1-0"
-
-    def test_game_without_elo(self):
-        """Test game without ELO ratings."""
-        pgn = """[Event "Test"]
-[White "Player1"]
-[Black "Player2"]
-[Result "1-0"]
-
-1. e4 1-0"""
-        game = RawGame(id=1, pgn=pgn)
-        snapshots = list(raw_game_to_snapshots(game))
-
-        assert len(snapshots) == 1
-        assert snapshots[0].white_elo is None
-        assert snapshots[0].black_elo is None
-
-    def test_invalid_elo(self):
-        """Test game with invalid ELO ratings."""
-        pgn = """[Event "Test"]
-[White "Player1"]
-[Black "Player2"]
-[WhiteElo "?"]
-[BlackElo "invalid"]
-[Result "1-0"]
-
-1. e4 1-0"""
-        game = RawGame(id=1, pgn=pgn)
-        snapshots = list(raw_game_to_snapshots(game))
-
-        assert snapshots[0].white_elo is None
-        assert snapshots[0].black_elo is None
+        # Note: white_elo, black_elo, and result are now in GameStatistics table
 
     def test_move_numbers(self):
         """Test that move numbers are sequential."""
@@ -220,7 +187,7 @@ class TestRawGameToSnapshots:
         assert snapshots[-1].move == "Qh4#"
 
     def test_draw_result(self):
-        """Test game with draw result."""
+        """Test game with draw result can be processed."""
         pgn = """[Event "Test"]
 [White "P1"]
 [Black "P2"]
@@ -230,7 +197,8 @@ class TestRawGameToSnapshots:
         game = RawGame(id=1, pgn=pgn)
         snapshots = list(raw_game_to_snapshots(game))
 
-        assert all(s.result == "1/2-1/2" for s in snapshots)
+        assert len(snapshots) == 4
+        # Note: result is now stored in GameStatistics table
 
     def test_fen_format(self):
         """Test that all snapshots have valid FEN strings."""

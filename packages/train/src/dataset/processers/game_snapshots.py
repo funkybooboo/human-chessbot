@@ -18,7 +18,7 @@ from packages.train.src.dataset.repositories.raw_games import mark_raw_game_as_p
 
 def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
     """Convert a RawGame into GameSnapshot objects (one per move).
-    
+
     Note: white_elo, black_elo, and result are stored in game_statistics table.
     """
     pgn_io = StringIO(raw_game.pgn)

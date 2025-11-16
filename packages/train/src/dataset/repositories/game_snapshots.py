@@ -9,7 +9,7 @@ _TABLE_NAME = "game_snapshots"
 
 def create_game_snapshots_table():
     """Create the 'game_snapshots' table if it does not exist.
-    
+
     Note: white_elo, black_elo, and result are stored in game_statistics table.
     Join with game_statistics using raw_game_id to get this data.
     """

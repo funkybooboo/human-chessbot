@@ -69,7 +69,7 @@ def save_game_statistics(stats: GameStatistics):
         # Check if statistics already exist for this raw_game_id
         c.execute(f"SELECT id FROM {_TABLE_NAME} WHERE raw_game_id = ?", (stats.raw_game_id,))
         existing = c.fetchone()
-        
+
         if existing:
             # Skip if already exists
             stats.id = existing[0]

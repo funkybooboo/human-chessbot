@@ -17,7 +17,7 @@ class GameSnapshotsDataset(Dataset):
 
     Loads board positions from FEN strings and converts them to tensor representations.
     Uses fixed encoding: ELO normalized to [0, 1] range, scalar results, move encoding included.
-    
+
     Automatically JOINs game_snapshots with game_statistics to retrieve ELO ratings and results.
 
     Args:
@@ -210,12 +210,12 @@ class GameSnapshotsDataset(Dataset):
         # retrieve index from the database slice with JOIN to game_statistics
         with sqlite3.connect(self.db_path) as conn:
             query = """
-                SELECT 
-                    gs.fen, 
-                    gs.move, 
+                SELECT
+                    gs.fen,
+                    gs.move,
                     gs.turn,
-                    gst.white_elo, 
-                    gst.black_elo, 
+                    gst.white_elo,
+                    gst.black_elo,
                     gst.result
                 FROM game_snapshots gs
                 JOIN game_statistics gst ON gs.raw_game_id = gst.raw_game_id

@@ -28,7 +28,7 @@ def fill_database_with_snapshots(
 
     Downloads files under max_size_gb, processes games, and saves snapshots and statistics.
     Stops when snapshots_threshold is reached or no more files are available.
-    
+
     Note: This automatically populates both game_snapshots and game_statistics tables.
     """
     initialize_database()
@@ -65,7 +65,7 @@ def fill_database_with_snapshots_from_lichess_filename(
     batch_size: int = DEFAULT_BATCH_SIZE,
 ) -> None:
     """Download and process a specific Lichess file by filename.
-    
+
     Note: This automatically populates both game_snapshots and game_statistics tables.
     """
     initialize_database()
