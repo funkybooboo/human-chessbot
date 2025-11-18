@@ -8,6 +8,4 @@ class GameSnapshot:
     turn: str  # 'w' for white, 'b' for black
     move: str  # move in SAN notation
     fen: str  # FEN string representation of the board
-    white_elo: int | None
-    black_elo: int | None
-    result: str  # '1-0', '0-1', '1/2-1/2', or '*'
+    # Note: white_elo, black_elo, and result are stored in game_statistics table

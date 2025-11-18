@@ -14,12 +14,19 @@ ETL pipeline for Lichess game data:
 - **Loaders**: Load game snapshots and legal moves for training
 - **Plotter**: Visualization utilities for dataset analysis
 
+### Training (`src/train/`)
+
+Neural network training with hyperparameter search:
+
+- `trainer.py` - Model training orchestration
+- `main.py` - Training entry point with JSON config
+- `analysis.py` - Training metrics analysis
+
 ### Models (`src/models/`)
 
-ML model prototypes (in development):
+Neural network model definitions:
 
-- `random_forest.ipynb` - Random forest classifier
-- `ann.ipynb` - Artificial neural network
+- `neural_network.py` - PyTorch neural network architecture
 
 ## Usage
 
@@ -27,8 +34,8 @@ ML model prototypes (in development):
 # Run dataset pipeline
 python -m packages.train.src.dataset.main
 
-# Access models in Jupyter
-jupyter lab packages/train/src/models/
+# Train neural network model
+python -m packages.train.src.train.main path/to/config.json
 ```
 
 ## Testing

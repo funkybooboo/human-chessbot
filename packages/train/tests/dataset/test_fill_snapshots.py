@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from packages.train.src.dataset.fillers.fill_snapshots import (
+from packages.train.src.dataset.fillers.fill_snapshots_and_statistics import (
     fill_database_with_snapshots,
     fill_database_with_snapshots_from_lichess_filename,
 )
@@ -13,9 +13,13 @@ from packages.train.src.dataset.models.raw_game import RawGame
 class TestFillDatabaseWithSnapshots:
     """Tests for fill_database_with_snapshots function."""
 
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.ensure_metadata_exists")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.SnapshotBatchProcessor")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.initialize_database")
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.ensure_metadata_exists"
+    )
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.SnapshotBatchProcessor"
+    )
     def test_stops_when_threshold_reached(self, mock_processor_class, mock_ensure, _mock_init):
         """Test that function stops when snapshot threshold is reached."""
         mock_processor = MagicMock()
@@ -27,7 +31,7 @@ class TestFillDatabaseWithSnapshots:
         _mock_init.assert_called_once()
         mock_ensure.assert_called_once()
 
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.initialize_database")
     @patch("packages.train.src.dataset.repositories.files_metadata.files_metadata_exist")
     @patch("packages.train.src.dataset.repositories.files_metadata.save_files_metadata")
     @patch("packages.train.src.dataset.requesters.file_metadata.fetch_files_metadata")
@@ -57,11 +61,13 @@ class TestFillDatabaseWithSnapshots:
         mock_fetch_metadata.assert_called_once()
         mock_save_metadata.assert_called_once()
 
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.initialize_database")
     @patch("packages.train.src.dataset.repositories.files_metadata.files_metadata_exist")
     @patch("packages.train.src.dataset.processers.game_snapshots.count_snapshots")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_unprocessed_raw_games")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_new_raw_games")
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.fetch_unprocessed_raw_games"
+    )
+    @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.fetch_new_raw_games")
     @patch("packages.train.src.dataset.processers.game_snapshots.raw_game_to_snapshots")
     @patch("packages.train.src.dataset.processers.game_snapshots.save_snapshots_batch")
     @patch("packages.train.src.dataset.processers.game_snapshots.mark_raw_game_as_processed")
@@ -96,9 +102,6 @@ class TestFillDatabaseWithSnapshots:
             turn="w",
             move="e4",
             fen="rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
-            white_elo=1500,
-            black_elo=1500,
-            result="1-0",
         )
         mock_to_snapshots.return_value = [snapshot]
 
@@ -109,12 +112,12 @@ class TestFillDatabaseWithSnapshots:
         mock_mark_processed.assert_called()
 
     # Skipping this test due to complexity in mocking all count_snapshots() calls
-    # @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    # @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.initialize_database")
     # @patch("packages.train.src.dataset.repositories.files_metadata.files_metadata_exist")
     # @patch("packages.train.src.dataset.processers.game_snapshots.count_snapshots")
-    # @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_unprocessed_raw_games")
-    # @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_new_raw_games")
-    # @patch("packages.train.src.dataset.fillers.fill_snapshots.save_raw_games_batch")
+    # @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.fetch_unprocessed_raw_games")
+    # @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.fetch_new_raw_games")
+    # @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.save_raw_games_batch")
     # def test_fetches_new_files_when_no_unprocessed(
     #     self,
     #     _mock_save_game,
@@ -136,11 +139,13 @@ class TestFillDatabaseWithSnapshots:
     #
     #     mock_fetch_new.assert_called_once()
 
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.initialize_database")
     @patch("packages.train.src.dataset.repositories.files_metadata.files_metadata_exist")
     @patch("packages.train.src.dataset.processers.game_snapshots.count_snapshots")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_unprocessed_raw_games")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_new_raw_games")
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.fetch_unprocessed_raw_games"
+    )
+    @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.fetch_new_raw_games")
     def test_stops_when_no_new_files_available(
         self,
         mock_fetch_new,
@@ -163,7 +168,9 @@ class TestFillDatabaseWithSnapshots:
     def test_uses_default_parameters(self):
         """Test that function uses default parameters correctly."""
         with (
-            patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database"),
+            patch(
+                "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.initialize_database"
+            ),
             patch(
                 "packages.train.src.dataset.repositories.files_metadata.files_metadata_exist",
                 return_value=True,
@@ -176,7 +183,7 @@ class TestFillDatabaseWithSnapshots:
             # Should stop immediately with high threshold already met
             fill_database_with_snapshots()
 
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.initialize_database")
     @patch("packages.train.src.dataset.repositories.files_metadata.files_metadata_exist")
     @patch("packages.train.src.dataset.processers.game_snapshots.count_snapshots")
     def test_respects_custom_threshold(self, mock_count, mock_files_exist, _mock_init):
@@ -193,9 +200,13 @@ class TestFillDatabaseWithSnapshots:
 class TestFillDatabaseWithSnapshotsFromFilename:
     """Tests for fill_database_with_snapshots_from_lichess_filename function."""
 
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.ensure_metadata_exists")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_file_metadata_by_filename")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.initialize_database")
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.ensure_metadata_exists"
+    )
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.fetch_file_metadata_by_filename"
+    )
     def test_file_not_found(self, mock_fetch, _mock_ensure, _mock_init):
         """Test behavior when file is not found in metadata."""
         mock_fetch.return_value = None
@@ -204,12 +215,22 @@ class TestFillDatabaseWithSnapshotsFromFilename:
 
         mock_fetch.assert_called_once_with("nonexistent.pgn.zst")
 
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.ensure_metadata_exists")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_file_metadata_by_filename")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_raw_games_from_file")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.SnapshotBatchProcessor")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.mark_file_as_processed")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.initialize_database")
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.ensure_metadata_exists"
+    )
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.fetch_file_metadata_by_filename"
+    )
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.fetch_raw_games_from_file"
+    )
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.SnapshotBatchProcessor"
+    )
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.mark_file_as_processed"
+    )
     def test_downloads_unprocessed_file(
         self,
         mock_mark,
@@ -243,11 +264,19 @@ class TestFillDatabaseWithSnapshotsFromFilename:
         mock_fetch_games.assert_called_once_with(file_meta)
         mock_mark.assert_called_once_with(file_meta)
 
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.initialize_database")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.ensure_metadata_exists")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_file_metadata_by_filename")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.fetch_raw_games_from_file")
-    @patch("packages.train.src.dataset.fillers.fill_snapshots.SnapshotBatchProcessor")
+    @patch("packages.train.src.dataset.fillers.fill_snapshots_and_statistics.initialize_database")
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.ensure_metadata_exists"
+    )
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.fetch_file_metadata_by_filename"
+    )
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.fetch_raw_games_from_file"
+    )
+    @patch(
+        "packages.train.src.dataset.fillers.fill_snapshots_and_statistics.SnapshotBatchProcessor"
+    )
     def test_skips_download_for_processed_file(
         self,
         mock_processor_class,

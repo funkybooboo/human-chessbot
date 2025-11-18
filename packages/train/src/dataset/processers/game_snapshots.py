@@ -7,23 +7,24 @@ import chess.pgn
 from packages.train.src.constants import DEFAULT_BATCH_SIZE, DEFAULT_PRINT_INTERVAL
 from packages.train.src.dataset.models.game_snapshot import GameSnapshot
 from packages.train.src.dataset.models.raw_game import RawGame
+from packages.train.src.dataset.processers.game_statistics import extract_statistics_from_raw_game
 from packages.train.src.dataset.repositories.game_snapshots import (
     count_snapshots,
     save_snapshots_batch,
 )
+from packages.train.src.dataset.repositories.game_statistics import save_game_statistics
 from packages.train.src.dataset.repositories.raw_games import mark_raw_game_as_processed
 
 
 def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
-    """Convert a RawGame into GameSnapshot objects (one per move)."""
+    """Convert a RawGame into GameSnapshot objects (one per move).
+
+    Note: white_elo, black_elo, and result are stored in game_statistics table.
+    """
     pgn_io = StringIO(raw_game.pgn)
     game = chess.pgn.read_game(pgn_io)
     if game is None:
         return
-
-    white_elo = _safe_int(game.headers.get("WhiteElo"))
-    black_elo = _safe_int(game.headers.get("BlackElo"))
-    result = game.headers.get("Result", "*")
 
     board = game.board()
     move_number = 1
@@ -42,9 +43,6 @@ def raw_game_to_snapshots(raw_game: RawGame) -> Iterator[GameSnapshot]:
             turn=turn,
             move=san_move,
             fen=fen,
-            white_elo=white_elo,
-            black_elo=black_elo,
-            result=result,
         )
 
         move_number += 1
@@ -80,7 +78,7 @@ class SnapshotBatchProcessor:
         should_stop: Callable[[], bool] | None = None,
         filter_game: Callable[[RawGame], bool] | None = None,
     ) -> int:
-        """Process games into snapshots and save to database in batches.
+        """Process games into snapshots and statistics, saving to database in batches.
 
         Args:
             games: Iterator of RawGame objects
@@ -102,6 +100,12 @@ class SnapshotBatchProcessor:
 
             games_processed += 1
 
+            # Extract and save game statistics
+            stats = extract_statistics_from_raw_game(game)
+            if stats:
+                save_game_statistics(stats)
+
+            # Process snapshots
             for snapshot in raw_game_to_snapshots(game):
                 self._batch.append(snapshot)
                 if len(self._batch) >= self.batch_size:
@@ -110,7 +114,6 @@ class SnapshotBatchProcessor:
             self._flush_batch()
             mark_raw_game_as_processed(game)
 
-        self._flush_batch()
         return games_processed
 
     def _flush_batch(self) -> None:

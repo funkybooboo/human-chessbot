@@ -8,7 +8,11 @@ _TABLE_NAME = "game_snapshots"
 
 
 def create_game_snapshots_table():
-    """Create the 'game_snapshots' table if it does not exist."""
+    """Create the 'game_snapshots' table if it does not exist.
+
+    Note: white_elo, black_elo, and result are stored in game_statistics table.
+    Join with game_statistics using raw_game_id to get this data.
+    """
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
@@ -21,9 +25,6 @@ def create_game_snapshots_table():
         turn TEXT,
         move TEXT,
         fen TEXT,
-        white_elo INTEGER,
-        black_elo INTEGER,
-        result TEXT,
         FOREIGN KEY(raw_game_id) REFERENCES raw_games(id)
     )
     """
@@ -57,10 +58,9 @@ def save_snapshot(snapshot: GameSnapshot):
         c.execute(
             f"""
         INSERT INTO {_TABLE_NAME} (
-            raw_game_id, move_number, turn, move, fen,
-            white_elo, black_elo, result
+            raw_game_id, move_number, turn, move, fen
         ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?
         )
         """,
             (
@@ -69,9 +69,6 @@ def save_snapshot(snapshot: GameSnapshot):
                 snapshot.turn,
                 snapshot.move,
                 snapshot.fen,
-                snapshot.white_elo,
-                snapshot.black_elo,
-                snapshot.result,
             ),
         )
 
@@ -100,9 +97,6 @@ def save_snapshots_batch(snapshots: list[GameSnapshot]):
                 snapshot.turn,
                 snapshot.move,
                 snapshot.fen,
-                snapshot.white_elo,
-                snapshot.black_elo,
-                snapshot.result,
             )
             for snapshot in snapshots
         ]
@@ -111,9 +105,8 @@ def save_snapshots_batch(snapshots: list[GameSnapshot]):
         c.executemany(
             f"""
             INSERT INTO {_TABLE_NAME} (
-                raw_game_id, move_number, turn, move, fen,
-                white_elo, black_elo, result
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                raw_game_id, move_number, turn, move, fen
+            ) VALUES (?, ?, ?, ?, ?)
             """,
             data,
         )
@@ -141,7 +134,4 @@ def _row_to_snapshot(row: tuple) -> GameSnapshot:
         turn=row[3],
         move=row[4],
         fen=row[5],
-        white_elo=row[6],
-        black_elo=row[7],
-        result=row[8],
     )

@@ -69,9 +69,6 @@ class TestGameSnapshotsTable:
                 turn="w",
                 move="e4",
                 fen=fen,
-                white_elo=1500,
-                black_elo=1500,
-                result="1-0",
             )
             game_snapshots.save_snapshot(snapshot)
 
@@ -98,9 +95,6 @@ class TestGameSnapshotsTable:
                     turn="w",
                     move=f"move{i}",
                     fen=fen,
-                    white_elo=1500,
-                    black_elo=1500,
-                    result="1-0",
                 )
                 for i in range(5)
             ]
@@ -125,9 +119,6 @@ class TestGameSnapshotsTable:
                     turn="w",
                     move=f"move{i}",
                     fen=fen,
-                    white_elo=1500,
-                    black_elo=1500,
-                    result="1-0",
                 )
                 for i in range(10)
             ]
@@ -156,9 +147,6 @@ class TestGameSnapshotsTable:
                 turn="w",
                 move="e4",
                 fen=fen1,
-                white_elo=1500,
-                black_elo=1500,
-                result="1-0",
             )
             snapshot2 = GameSnapshot(
                 raw_game_id=1,
@@ -166,9 +154,6 @@ class TestGameSnapshotsTable:
                 turn="b",
                 move="e5",
                 fen=fen2,
-                white_elo=1500,
-                black_elo=1500,
-                result="1-0",
             )
 
             game_snapshots.save_snapshot(snapshot1)
@@ -190,8 +175,8 @@ class TestGameSnapshotsTable:
             assert saved_fen1 == fen1
             assert saved_fen2 == fen2
 
-    def test_save_snapshot_with_none_elo(self, temp_db):
-        """Test saving a snapshot with None ELO values."""
+    def test_save_snapshot_basic(self, temp_db):
+        """Test saving a basic snapshot."""
         with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
             fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
             snapshot = GameSnapshot(
@@ -200,50 +185,20 @@ class TestGameSnapshotsTable:
                 turn="w",
                 move="e4",
                 fen=fen,
-                white_elo=None,
-                black_elo=None,
-                result="1-0",
             )
             game_snapshots.save_snapshot(snapshot)
 
             conn = sqlite3.connect(temp_db)
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT white_elo, black_elo FROM game_snapshots WHERE raw_game_id = ? AND move_number = ?",
+                "SELECT move, fen FROM game_snapshots WHERE raw_game_id = ? AND move_number = ?",
                 (1, 1),
             )
             row = cursor.fetchone()
             conn.close()
 
-            assert row[0] is None
-            assert row[1] is None
-
-    def test_save_snapshot_different_results(self, temp_db):
-        """Test saving snapshots with different game results."""
-        with patch("packages.train.src.dataset.repositories.game_snapshots.DB_FILE", temp_db):
-            fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-            results = ["1-0", "0-1", "1/2-1/2", "*"]
-
-            for i, result in enumerate(results):
-                snapshot = GameSnapshot(
-                    raw_game_id=1,
-                    move_number=i,
-                    turn="w",
-                    move=f"move{i}",
-                    fen=fen,
-                    white_elo=1500,
-                    black_elo=1500,
-                    result=result,
-                )
-                game_snapshots.save_snapshot(snapshot)
-
-            conn = sqlite3.connect(temp_db)
-            cursor = conn.cursor()
-            cursor.execute("SELECT result FROM game_snapshots ORDER BY move_number")
-            rows = cursor.fetchall()
-            conn.close()
-
-            assert [row[0] for row in rows] == results
+            assert row[0] == "e4"
+            assert row[1] == fen
 
     def test_save_snapshot_high_move_number(self, temp_db):
         """Test saving a snapshot with high move number."""
@@ -255,9 +210,6 @@ class TestGameSnapshotsTable:
                 turn="w",
                 move="Kg3",
                 fen=fen,
-                white_elo=1500,
-                black_elo=1500,
-                result="1-0",
             )
             game_snapshots.save_snapshot(snapshot)
 
@@ -285,9 +237,6 @@ class TestGameSnapshotsTable:
                     turn="w",
                     move=move,
                     fen=fen,
-                    white_elo=1500,
-                    black_elo=1500,
-                    result="1-0",
                 )
                 game_snapshots.save_snapshot(snapshot)
 

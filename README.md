@@ -1,4 +1,4 @@
-# The Human Chess Bot
+# Human Chessbot
 
 Chess application suite with multiple engines, data processing tools, and ML training utilities.
 
@@ -14,13 +14,13 @@ Chess application suite with multiple engines, data processing tools, and ML tra
 
 ```bash
 # Clone and setup
-git clone https://github.com/YOUR_USERNAME/the_human_chess_bot.git
-cd the_human_chess_bot
+git clone <repository-url>
+cd human-chessbot
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# Install with dev dependencies
-pip install -e ".[dev]"
+# Install
+pip install -e .
 pre-commit install
 
 # Run chess application
@@ -30,7 +30,7 @@ python -m packages.play.src.main
 ## Project Structure
 
 ```
-the_human_chess_bot/
+human-chessbot/
 ├── packages/
 │   ├── play/          # Chess game application
 │   ├── convert/       # PGN conversion utilities
@@ -76,7 +76,7 @@ mypy packages/              # Type check only
 ### Contributing
 
 1. Fork repository and create feature branch
-2. Install: `pip install -e ".[dev]" && pre-commit install`
+2. Install: `pip install -e . && pre-commit install`
 3. Make changes and write tests
 4. Ensure hooks and tests pass
 5. Submit pull request

@@ -7,7 +7,7 @@ Detailed setup and workflow for contributors.
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
+pip install -e .
 pre-commit install
 pytest packages/*/tests/ -v  # Verify setup
 ```
@@ -15,7 +15,7 @@ pytest packages/*/tests/ -v  # Verify setup
 ## Project Structure
 
 ```
-the_human_chess_bot/
+human-chessbot/
 ├── packages/
 │   ├── play/       # Chess game application
 │   ├── convert/    # PGN conversion utilities
@@ -113,7 +113,7 @@ def apply_move(self, move: chess.Move) -> str:
 
 Edit `pyproject.toml` dependencies section, then:
 ```bash
-pip install -e ".[dev]"
+pip install -e .
 ```
 
 ### Add Module
@@ -133,8 +133,8 @@ touch packages/mypackage/README.md
 
 | Issue | Solution |
 |-------|----------|
-| Import errors | `pip install -e ".[dev]"` |
-| Test failures | `rm -rf .pytest_cache && pip install -e ".[dev]"` |
+| Import errors | `pip install -e .` |
+| Test failures | `rm -rf .pytest_cache && pip install -e .` |
 | Formatting conflicts | `pre-commit run --all-files` |
 | Type errors | `mypy packages/` to identify issues |
 

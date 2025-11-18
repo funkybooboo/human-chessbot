@@ -18,21 +18,18 @@ class GameSnapshotsDataset(Dataset):
     Loads board positions from FEN strings and converts them to tensor representations.
     Uses fixed encoding: ELO normalized to [0, 1] range, scalar results, move encoding included.
 
+    Automatically JOINs game_snapshots with game_statistics to retrieve ELO ratings and results.
+
     Args:
+        start_index: Starting index for dataset slice
+        num_indexes: Number of indexes to include in dataset
         db_path: Path to SQLite database (defaults to DB_FILE from constants)
-        elo_filter: Tuple of (min_elo, max_elo) to filter games. If None, includes all games.
-        result_filter: List of results to include (e.g., ['1-0', '0-1']). If None, includes all.
-        limit: Maximum number of samples to load. If None, loads all matching records.
 
     Returns:
-        Dictionary with keys:
-            - board: (8, 8, 12) tensor - piece positions one-hot encoded
-            - turn: (2,) tensor - one-hot encoded [white, black]
-            - elo: (2,) tensor - normalized [white_elo / 3000, black_elo / 3000]
-            - result: (1,) tensor - game outcome (0.0=loss, 0.5=draw, 1.0=win)
-            - move_from: (64,) tensor - one-hot encoded source square
-            - move_to: (64,) tensor - one-hot encoded target square
-            - promotion: (5,) tensor - one-hot encoded promotion piece
+        Tuple of (labels, (move_index, promotion_index)) where:
+            - labels: Combined tensor with [white_elo, black_elo, turn_white, turn_black, board_state]
+            - move_index: Integer encoding of move (start_col + 8*start_row + 64*end_col + 512*end_row)
+            - promotion_index: Integer encoding of promotion piece (0=none, 1=N, 2=B, 3=R, 4=Q)
     """
 
     # Piece type indices for one-hot encoding
@@ -210,9 +207,20 @@ class GameSnapshotsDataset(Dataset):
         # to avoid the off by one error caused by the database starting at 1
         idx += self.start_index + 1
 
-        # retrieve index from the database slice
+        # retrieve index from the database slice with JOIN to game_statistics
         with sqlite3.connect(self.db_path) as conn:
-            query = "SELECT fen, move, white_elo, black_elo, result, turn FROM game_snapshots WHERE id=?"
+            query = """
+                SELECT
+                    gs.fen,
+                    gs.move,
+                    gs.turn,
+                    gst.white_elo,
+                    gst.black_elo,
+                    gst.result
+                FROM game_snapshots gs
+                JOIN game_statistics gst ON gs.raw_game_id = gst.raw_game_id
+                WHERE gs.id=?
+            """
             cur = conn.cursor()
             row = cur.execute(query, (idx,)).fetchone()
             if row is None:
@@ -221,10 +229,10 @@ class GameSnapshotsDataset(Dataset):
             data = {
                 "fen": row[0],
                 "move": row[1],
-                "white_elo": row[2] if row[2] is not None else 0,
-                "black_elo": row[3] if row[3] is not None else 0,
-                "result": row[4],
-                "turn": row[5],
+                "turn": row[2],
+                "white_elo": row[3] if row[3] is not None else 0,
+                "black_elo": row[4] if row[4] is not None else 0,
+                "result": row[5],
             }
 
         # Encode all features
