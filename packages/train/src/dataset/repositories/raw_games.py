@@ -134,9 +134,7 @@ def fetch_unprocessed_raw_games(file_id: int | None = None) -> Iterator[RawGame]
                 (file_id,),
             )
         else:
-            c.execute(
-                f"SELECT id, file_id, pgn, processed FROM {_TABLE_NAME} WHERE processed = 0"
-            )
+            c.execute(f"SELECT id, file_id, pgn, processed FROM {_TABLE_NAME} WHERE processed = 0")
         rows = c.fetchall()
     finally:
         conn.close()

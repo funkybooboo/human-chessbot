@@ -8,6 +8,18 @@ from packages.train.src.dataset.repositories.db_utils import is_database_initial
 _TABLE_NAME: str = "files_metadata"
 
 
+def ensure_metadata_exists() -> None:
+    """Fetch and save Lichess file metadata if not already in database."""
+    if not files_metadata_exist():
+        from packages.train.src.dataset.requesters.file_metadata import fetch_files_metadata
+
+        print("Fetching file metadata from Lichess...")
+        save_files_metadata(fetch_files_metadata())
+        print("Metadata saved.")
+    else:
+        print("File metadata already exists.")
+
+
 def create_files_metadata_table():
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
@@ -27,7 +39,7 @@ def create_files_metadata_table():
 
 
 def files_metadata_exist() -> bool:
-    """Return True if the 'files_metadata' table has any rows."""
+    """Check if files_metadata table has any rows."""
     if not is_database_initialized():
         return False
 
@@ -42,17 +54,13 @@ def files_metadata_exist() -> bool:
 
 
 def save_file_metadata(file: FileMetadata) -> None:
-    """
-    Save a single FileMetadata object into the database.
-    Skips if a file with the same URL already exists.
-    Updates the object's `id` after insertion.
-    """
+    """Save FileMetadata to database (skips duplicates by URL)."""
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
         cursor.execute(f"SELECT id FROM {_TABLE_NAME} WHERE url = ?", (file.url,))
         row = cursor.fetchone()
         if row:
-            file.id = row[0]  # assign existing id
+            file.id = row[0]
             return
 
         cursor.execute(
@@ -62,15 +70,12 @@ def save_file_metadata(file: FileMetadata) -> None:
             """,
             (file.url, file.filename, file.games, file.size_gb, int(file.processed)),
         )
-        file.id = cursor.lastrowid  # assign new id
+        file.id = cursor.lastrowid
         conn.commit()
 
 
 def save_files_metadata(files: Iterable[FileMetadata]) -> None:
-    """
-    Save an iterable of FileMetadata objects into the database.
-    Calls `save_file_metadata` for each file.
-    """
+    """Save multiple FileMetadata objects to database."""
     for file in files:
         save_file_metadata(file)
 
@@ -84,7 +89,7 @@ def mark_file_as_processed(file: FileMetadata) -> None:
 
 
 def fetch_all_files_metadata() -> Iterator[FileMetadata]:
-    """Yield all FileMetadata objects in the database."""
+    """Fetch all FileMetadata from database."""
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
         cursor.execute(f"SELECT id, url, filename, games, size_gb, processed FROM {_TABLE_NAME}")
@@ -93,7 +98,7 @@ def fetch_all_files_metadata() -> Iterator[FileMetadata]:
 
 
 def fetch_files_metadata_under_size(max_gb: float) -> Iterator[FileMetadata]:
-    """Yield FileMetadata objects with size less than max_gb."""
+    """Fetch FileMetadata for files smaller than max_gb."""
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -102,6 +107,20 @@ def fetch_files_metadata_under_size(max_gb: float) -> Iterator[FileMetadata]:
         )
         for row in cursor:
             yield _row_to_file_metadata(row)
+
+
+def fetch_file_metadata_by_filename(filename: str) -> FileMetadata | None:
+    """Fetch FileMetadata by filename (returns None if not found)."""
+    with sqlite3.connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"SELECT id, url, filename, games, size_gb, processed FROM {_TABLE_NAME} WHERE filename = ?",
+            (filename,),
+        )
+        row = cursor.fetchone()
+        if row:
+            return _row_to_file_metadata(row)
+        return None
 
 
 def _row_to_file_metadata(row: tuple) -> FileMetadata:

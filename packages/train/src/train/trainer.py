@@ -61,9 +61,7 @@ class Trainer:
             print("Warning: cuda_enabled=True but CUDA is not available. Falling back to CPU.")
             self.cuda_enabled = False
         # Select device
-        self.device = torch.device(
-            "cuda" if self.cuda_enabled else "cpu"
-        )
+        self.device = torch.device("cuda" if self.cuda_enabled else "cpu")
 
         # Move model and criterion to the device
         self.model.to(self.device)

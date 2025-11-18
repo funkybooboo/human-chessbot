@@ -44,12 +44,14 @@ class TestRandomBotPlayer:
         # Test on starting position
         board = chess.Board()
         move = player.get_move(board)
+        assert move is not None
         assert move in board.legal_moves
 
         # Test after a few moves
         board.push(chess.Move.from_uci("e2e4"))
         board.push(chess.Move.from_uci("e7e5"))
         move = player.get_move(board)
+        assert move is not None
         assert move in board.legal_moves
 
     def test_get_move_randomness(self):
