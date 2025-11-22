@@ -65,7 +65,8 @@ class GameSnapshotsDataset(Dataset):
 
         self.legal_moves = LegalMovesDataset()
 
-    def _fen_to_tensor(self, fen: str) -> torch.Tensor:
+    @staticmethod
+    def fen_to_tensor(fen: str) -> torch.Tensor:
         """Convert FEN string to tensor representation.
 
         Creates a 1d flattened tensor of a chess board where each tile represents
@@ -89,7 +90,7 @@ class GameSnapshotsDataset(Dataset):
                 file = chess.square_file(square)
 
                 # Get piece type index (0-5)
-                piece_idx = self.PIECE_TYPES[piece.piece_type]
+                piece_idx = GameSnapshotsDataset.PIECE_TYPES[piece.piece_type]
 
                 # Add 6 for black pieces
                 if not piece.color:  # Black
@@ -103,7 +104,7 @@ class GameSnapshotsDataset(Dataset):
         return torch.from_numpy(tensor)
 
     @staticmethod
-    def _encode_result(result: str, turn: str) -> torch.Tensor:
+    def encode_result(result: str, turn: str) -> torch.Tensor:
         """Encode result as scalar value from current player's perspective.
 
         Args:
@@ -122,7 +123,7 @@ class GameSnapshotsDataset(Dataset):
         return torch.tensor([value], dtype=torch.float32)
 
     @staticmethod
-    def _encode_turn(turn: str) -> torch.Tensor:
+    def encode_turn(turn: str) -> torch.Tensor:
         """Encode turn as one-hot vector.
 
         Args:
@@ -139,7 +140,7 @@ class GameSnapshotsDataset(Dataset):
         return onehot
 
     @staticmethod
-    def _normalize_elo(white_elo: int, black_elo: int) -> torch.Tensor:
+    def normalize_elo(white_elo: int, black_elo: int) -> torch.Tensor:
         """Normalize ELO ratings through z normalization based on values precomputed from all
         of the data from 2013
 
@@ -229,13 +230,13 @@ class GameSnapshotsDataset(Dataset):
 
         # _encode_move
         chosen_move = self._encode_move(data["fen"], data["move"])
-        turn = self._encode_turn(data["turn"])
+        turn = self.encode_turn(data["turn"])
 
         # elos
-        elos = self._normalize_elo(data["white_elo"], data["black_elo"])
+        elos = self.normalize_elo(data["white_elo"], data["black_elo"])
 
         # board
-        board = self._fen_to_tensor(data["fen"])
+        board = self.fen_to_tensor(data["fen"])
 
         # combine to 1d tensor
         labels = torch.cat((elos, turn, board), 0)

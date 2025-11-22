@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from packages.train.src.dataset.plotter import compute_histograms, plot_elo_distribution
+from packages.train.src.dataset.charts.plotter import compute_histograms, plot_elo_distribution
 
 
 class TestComputeHistograms:
@@ -264,7 +264,7 @@ class TestPlotterConstants:
 
     def test_imports_constants(self):
         """Test that constants are imported."""
-        from packages.train.src.dataset.plotter import MAX_ELO, MIN_ELO
+        from packages.train.src.dataset.charts.plotter import MAX_ELO, MIN_ELO
 
         assert MIN_ELO == 600
         assert MAX_ELO == 1900
