@@ -5,7 +5,10 @@ from unittest.mock import patch
 
 import pytest
 
-from packages.train.src.dataset.charts.plotter import compute_histograms, plot_elo_distribution
+from packages.train.src.dataset.charts.plot_elo_distribution import (
+    compute_histograms,
+    plot_elo_distribution,
+)
 
 
 class TestComputeHistograms:
@@ -184,8 +187,8 @@ class TestComputeHistograms:
 class TestPlotEloDistribution:
     """Tests for plot_elo_distribution function."""
 
-    @patch("packages.train.src.dataset.plotter.plt")
-    @patch("packages.train.src.dataset.plotter.compute_histograms")
+    @patch("packages.train.src.dataset.charts.plot_elo_distribution.plt")
+    @patch("packages.train.src.dataset.charts.plot_elo_distribution.compute_histograms")
     def test_plot_creation(self, mock_compute, mock_plt):
         """Test that plot is created correctly."""
         mock_compute.return_value = (
@@ -200,8 +203,8 @@ class TestPlotEloDistribution:
         mock_plt.figure.assert_called_once()
         mock_compute.assert_called_once()
 
-    @patch("packages.train.src.dataset.plotter.plt")
-    @patch("packages.train.src.dataset.plotter.compute_histograms")
+    @patch("packages.train.src.dataset.charts.plot_elo_distribution.plt")
+    @patch("packages.train.src.dataset.charts.plot_elo_distribution.compute_histograms")
     def test_save_plot(self, mock_compute, mock_plt, tmp_path):
         """Test saving plot to file."""
         mock_compute.return_value = (
@@ -217,8 +220,8 @@ class TestPlotEloDistribution:
         # Should call savefig (note: actual code doesn't use bbox_inches='tight')
         mock_plt.savefig.assert_called_once_with(str(save_path), dpi=150)
 
-    @patch("packages.train.src.dataset.plotter.plt")
-    @patch("packages.train.src.dataset.plotter.compute_histograms")
+    @patch("packages.train.src.dataset.charts.plot_elo_distribution.plt")
+    @patch("packages.train.src.dataset.charts.plot_elo_distribution.compute_histograms")
     def test_show_plot(self, mock_compute, mock_plt):
         """Test showing plot."""
         mock_compute.return_value = ([10], [15], [1000, 1100])
@@ -228,12 +231,12 @@ class TestPlotEloDistribution:
         # Should call plt.show()
         mock_plt.show.assert_called_once()
 
-    @patch("packages.train.src.dataset.plotter.compute_histograms")
+    @patch("packages.train.src.dataset.charts.plot_elo_distribution.compute_histograms")
     def test_plot_with_custom_bins(self, mock_compute):
         """Test plotting with custom bin size."""
         mock_compute.return_value = ([10], [15], [1000, 1100])
 
-        with patch("packages.train.src.dataset.plotter.plt"):
+        with patch("packages.train.src.dataset.charts.plot_elo_distribution.plt"):
             plot_elo_distribution("dummy.db", bins=100, show=False)
 
         # Should pass bins parameter with min/max values to compute_histograms
@@ -241,8 +244,8 @@ class TestPlotEloDistribution:
             db_path="dummy.db", bin_size=100, min_val=600, max_val=1900
         )
 
-    @patch("packages.train.src.dataset.plotter.plt")
-    @patch("packages.train.src.dataset.plotter.compute_histograms")
+    @patch("packages.train.src.dataset.charts.plot_elo_distribution.plt")
+    @patch("packages.train.src.dataset.charts.plot_elo_distribution.compute_histograms")
     def test_plot_formatting(self, mock_compute, mock_plt):
         """Test that plot has proper formatting."""
         mock_compute.return_value = (
@@ -264,7 +267,7 @@ class TestPlotterConstants:
 
     def test_imports_constants(self):
         """Test that constants are imported."""
-        from packages.train.src.dataset.charts.plotter import MAX_ELO, MIN_ELO
+        from packages.train.src.constants import MAX_ELO, MIN_ELO
 
         assert MIN_ELO == 600
         assert MAX_ELO == 1900
