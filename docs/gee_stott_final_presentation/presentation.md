@@ -66,9 +66,290 @@ style: |
 <!-- _class: lead -->
 
 # Enia
+## A Human-Like Chess Engine
 
-Introduction/problem definition/motivation
-Methodology/proposed solution/theories/ML models
-Experiments->datasets, baselines, evaluation metrics, comparisons
-Conclusions/discussions/future work
-Slide quality and time management (e.g., font size, figure visibility, references used, bullet-point summarizing, concise description)
+**Ethan Gee & Nate Stott**
+
+---
+
+# Agenda
+
+1. **Introduction & Motivation**
+2. **Methodology**
+3. **Experiments**
+4. **Conclusions & Future Work**
+
+---
+
+# Introduction
+
+## Problem Definition
+
+- Traditional chess engines (Stockfish, LC0) play **optimally**
+- They don't play like humans
+- Goal: Predict what move a **human** would make
+
+---
+
+# Introduction
+
+## Motivation
+
+- **Training partners**: Engines at human skill levels
+- **Chess education**: Learn from human-like mistakes
+- **Research**: Model human decision-making in games
+
+---
+
+# Methodology
+
+## Approach: Supervised Learning
+
+```
++------------------+     +------------------+     +------------------+
+|  Human Games     | --> |  Neural Network  | --> |  Move Prediction |
+|  (Lichess)       |     |  (CNN + FC)      |     |  (2104 classes)  |
++------------------+     +------------------+     +------------------+
+```
+
+Train on millions of human chess positions to predict the next move.
+
+---
+
+# Methodology
+
+## Data Pipeline
+
+```
+  +----------------+
+  | Lichess Server |
+  | (PGN.zst files)|
+  +-------+--------+
+          | HTTP download
+          v
+  +-------+--------+
+  | Zstd Decompress|
+  +-------+--------+
+          | Split by game
+          v
+  +-------+--------+      +------------------+
+  |   raw_games    |----->| game_statistics  |
+  | (full PGN text)|      | (elo, result)    |
+  +-------+--------+      +------------------+
+          | Parse moves
+          v
+  +-------+--------+
+  | game_snapshots |
+  | (fen + move)   |
+  +-------+--------+
+          | Encode tensors
+          v
+  +-------+--------+
+  | PyTorch Dataset|
+  | (board, meta)  |
+  +----------------+
+```
+
+---
+
+# Methodology
+
+## Database Schema
+
+```
++------------------+       +------------------+       +------------------+
+|  file_metadata   |       |    raw_games     |       | game_statistics  |
++------------------+       +------------------+       +------------------+
+| id (PK)          |<--+   | id (PK)          |<----->| id (PK)          |
+| url              |   +---| file_id (FK)     |       | raw_game_id (FK) |
+| filename         |       | pgn              |       | white_elo        |
+| games            |       | processed        |       | black_elo        |
+| size_gb          |       +------------------+       | result           |
+| processed        |               |                  | time_control     |
++------------------+               |                  | opening          |
+                                   | 1:N              | eco              |
+                                   v                  +------------------+
+                          +------------------+
+                          | game_snapshots   |
+                          +------------------+
+                          | id (PK)          |
+                          | raw_game_id (FK) |
+                          | move_number      |
+                          | turn             |
+                          | move             |
+                          | fen              |
+                          +------------------+
+```
+
+---
+
+# Methodology
+
+## Neural Network Architecture
+
+```
+                 +----------------+
+   Board  -----> | Conv Layers    |
+  (12,8,8)       | 6x Conv2d(64)  |
+                 | 8x8 kernel     |
+                 +----------------+
+                         |
+                         v
+                 +----------------+
+                 | Flatten (4096) |
+                 +----------------+
+                         |
+Metadata (4) ------------+
+                         |
+                         v
+                 +----------------------------+
+                 | FC Layers (4100->512->32)  |
+                 +----------------------------+
+                         |
+                         v
+                 +----------------------------+
+                 | Move Head (32->2104)       |
+                 | Softmax                    |
+                 +----------------------------+
+```
+
+---
+
+# Methodology
+
+## Output: Move Encoding
+
+```
+2104 possible moves indexed by:
+  - Start square (0-63)
+  - End square (0-63)
+  - Promotion piece (N, B, R, Q)
+
+Move prediction = classification over 2104 classes
+```
+
+---
+
+# Experiments
+
+## Dataset
+
+- **Source**: Lichess open database
+- **Games**: Human vs. human rated games
+- **Positions**: Each game -> multiple snapshots (1 per move)
+- **Size**: [TODO: number of games/positions]
+
+---
+
+# Experiments
+
+## Data Split
+
+| Split | Percentage |
+|-------|------------|
+| Training | 80% |
+| Validation | 10% |
+| Test | 10% |
+
+---
+
+# Experiments
+
+## Training Setup
+
+| Setting | Value |
+|---------|-------|
+| Loss Function | CrossEntropyLoss |
+| Optimizer | Adam |
+| Hyperparameters | learning_rate, decay, beta1, beta2 |
+| Search Method | Random Search |
+
+---
+
+# Experiments
+
+## Baselines
+
+| Method | Description |
+|--------|-------------|
+| **Random** | Uniform random over legal moves |
+| **Popular Move** | Most common move in training set |
+| **Enia (Ours)** | CNN + FC neural network |
+
+---
+
+# Experiments
+
+## Evaluation Metrics
+
+- **Top-1 Accuracy**: Predicted move = actual move
+- **Top-5 Accuracy**: Actual move in top 5 predictions
+- **Cross-Entropy Loss**: Training convergence
+
+---
+
+# Experiments
+
+## Results
+
+[TODO: Add training curves]
+
+| Metric | Value |
+|--------|-------|
+| Training Loss | [TODO] |
+| Validation Loss | [TODO] |
+| Top-1 Accuracy | [TODO] |
+| Top-5 Accuracy | [TODO] |
+
+---
+
+# Experiments
+
+## Comparison to Baselines
+
+| Method | Top-1 Accuracy |
+|--------|----------------|
+| Random | ~0.03% (1/30 legal moves avg) |
+| Popular Move | [TODO] |
+| **Enia (Ours)** | [TODO] |
+
+---
+
+# Conclusions
+
+## Summary
+
+- Built end-to-end pipeline: Lichess -> SQLite -> PyTorch
+- CNN architecture for spatial pattern recognition
+- Supervised learning to predict human moves
+
+---
+
+# Conclusions
+
+## Limitations
+
+- Dataset size constraints
+- Computational resources
+- No modeling of player skill level
+
+---
+
+# Conclusions
+
+## Future Work
+
+- Larger models (transformers)
+- Rating-specific models
+- More training data
+- Data augmentation (board flipping)
+
+---
+
+<!-- _class: lead -->
+
+# Questions?
+
+**Enia**: Human-Like Chess Engine
+
+Ethan Gee & Nate Stott
