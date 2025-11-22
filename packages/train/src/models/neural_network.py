@@ -36,8 +36,9 @@ class NeuralNetwork(nn.Module):
             nn.ReLU(),
         )
 
-        # here we split into two heads to handle move and promote predictions separately
+        # here we split into two heads to handle move and auxilary predictions separately
         self.move_head = nn.Sequential(nn.Linear(32, 2104), nn.Softmax(dim=1))
+        self.auxiliary_head = nn.Sequential(nn.Linear(32, 2104), nn.Softmax(dim=1))
 
     def forward(self, metadata: torch.Tensor, board: torch.Tensor):
         board = self.convolution(board)
@@ -45,4 +46,4 @@ class NeuralNetwork(nn.Module):
 
         x = torch.cat((board, metadata), dim=1)
         shared_output = self.fully_connected(x)
-        return self.move_head(shared_output)
+        return self.move_head(shared_output), self.auxiliary_head(shared_output)

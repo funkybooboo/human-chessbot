@@ -176,19 +176,23 @@ class Trainer:
         for epoch in range(self.num_epochs):
             self.model.train()
 
-            for _batch, ((board, metadata), move_y) in enumerate(self.train_dataloader):
+            for _batch, ((board, metadata), (chosen_move, valid_moves)) in enumerate(
+                self.train_dataloader
+            ):
                 # batch_x is a tuple (metadata, board), need to handle each component
                 # Unpack board and metadata from batch_x tuple
                 metadata = metadata.to(self.device, non_blocking=non_blocking)
                 board = board.to(self.device, non_blocking=non_blocking)
-                move_y = move_y.to(self.device, non_blocking=non_blocking)
+                chosen_move = chosen_move.to(self.device, non_blocking=non_blocking)
+                valid_moves = valid_moves.to(self.device, non_blocking=non_blocking)
 
                 optimizer.zero_grad()
-                predicted_moves = self.model(metadata, board)
+                predicted_chosen, predicted_valid = self.model(metadata, board)
 
                 # calculate loss
-                move_loss = self.criterion(predicted_moves, move_y)
-                loss = move_loss
+                move_loss = self.criterion(predicted_chosen, chosen_move)
+                valid_loss = self.criterion(predicted_valid, valid_moves)
+                loss = move_loss + valid_loss
 
                 loss.backward()
                 optimizer.step()
@@ -218,21 +222,21 @@ class Trainer:
         self.model.eval()
         non_blocking = self.device.type == "cuda"
         with torch.no_grad():
-            for _batch, ((board, metadata), move_y) in enumerate(dataloader):
+            for _batch, ((board, metadata), (chosen_move, _)) in enumerate(dataloader):
                 # batch_x is a tuple (metadata, board), need to handle each component
                 metadata = metadata.to(self.device, non_blocking=non_blocking)
                 board = board.to(self.device, non_blocking=non_blocking)
-                move_y = move_y.to(self.device, non_blocking=non_blocking)
+                chosen_move = chosen_move.to(self.device, non_blocking=non_blocking)
 
-                predicted_moves = self.model(metadata, board)
+                predicted_moves, _ = self.model(metadata, board)
 
-                move_loss = self.criterion(predicted_moves, move_y)
+                move_loss = self.criterion(predicted_moves, chosen_move)
                 loss = move_loss
                 total_loss += loss.item()
 
                 # Only calculate the accuracy of moves
                 _, predicted_moves = torch.max(predicted_moves.data, 1)
-                correct_moves += (predicted_moves == move_y).sum().item()
+                correct_moves += (predicted_moves == chosen_move).sum().item()
 
         avg_loss = total_loss / len(dataloader.dataset)
         accuracy = 100 * correct_moves / len(dataloader.dataset)

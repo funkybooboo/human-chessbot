@@ -182,6 +182,19 @@ class GameSnapshotsDataset(Dataset):
             # If move parsing fails, return zeros
             return 0
 
+    def _encode_valid_moves(self, fen: str) -> torch.Tensor:
+        """Encode all legal moves for a given position."""
+        board = chess.Board(fen)
+
+        valid_moves = list(board.legal_moves)
+
+        moves_tensor = torch.zeros(len(self.legal_moves), dtype=torch.float32)
+
+        for move in valid_moves:
+            moves_tensor[self.legal_moves.get_index_from_move(board.uci(move))] = 1.0
+
+        return moves_tensor
+
     def __len__(self) -> int:
         """Return the number of samples in the dataset."""
         return self.num_indexes
@@ -229,6 +242,7 @@ class GameSnapshotsDataset(Dataset):
 
         # _encode_move
         chosen_move = self._encode_move(data["fen"], data["move"])
+        valid_moves = self._encode_valid_moves(data["fen"])
         turn = self.encode_turn(data["turn"])
 
         # elos
@@ -240,4 +254,4 @@ class GameSnapshotsDataset(Dataset):
         # combine to 1d tensor
         metadata = torch.cat((elos, turn), 0)
 
-        return (board, metadata), chosen_move
+        return (board, metadata), (chosen_move, valid_moves)
