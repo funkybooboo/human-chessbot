@@ -74,10 +74,10 @@ style: |
 
 # Agenda
 
-1. **Introduction & Motivation** (22%)
-2. **Methodology** (27%)
-3. **Experiments** (32%)
-4. **Conclusions & Future Work** (12%)
+1. **Introduction & Motivation**
+2. **Methodology**
+3. **Experiments**
+4. **Conclusions & Future Work**
 
 ---
 
