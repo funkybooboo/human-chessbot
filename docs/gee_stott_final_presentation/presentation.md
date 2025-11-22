@@ -65,182 +65,284 @@ style: |
 
 <!-- _class: lead -->
 
-# Human Chessbot
+# Enia
+## A Human-Like Chess Engine
 
-**A Chess Application Suite with Machine Learning Capabilities**
-
----
-
-# Project Overview
-
-A comprehensive chess application suite featuring:
-
-- **Interactive chess gameplay** with multiple engine support
-- **Data processing pipeline** for chess game analysis
-- **ML training infrastructure** for chess AI development
-
-Built with Python 3.11+ and modern ML frameworks
+**Ethan Gee & Nate Stott**
 
 ---
 
-# Key Features
+# Agenda
 
-## Play Package
-- Interactive GUI and CLI interfaces
-- Multiple chess engines (Stockfish, LCZero, Random bot)
-- Time controls and automatic game recording
-
-## Convert Package
-- PGN file processing and combination
-- CSV conversion for ML training
-- Batch processing capabilities
-
-## Train Package
-- Lichess dataset ETL pipeline
-- Neural network training infrastructure
-- Game analysis and statistics
+1. **Introduction & Motivation** (22%)
+2. **Methodology** (27%)
+3. **Experiments** (32%)
+4. **Conclusions & Future Work** (12%)
 
 ---
 
-# Architecture
+# Introduction
+
+## Problem Definition
+
+- Traditional chess engines (Stockfish, LC0) play **optimally**
+- They don't play like humans
+- Goal: Predict what move a **human** would make
+
+---
+
+# Introduction
+
+## Motivation
+
+- **Training partners**: Engines at human skill levels
+- **Chess education**: Learn from human-like mistakes
+- **Research**: Model human decision-making in games
+
+---
+
+# Methodology
+
+## Approach: Supervised Learning
 
 ```
-human-chessbot/
-├── packages/
-│   ├── play/          # Chess game application
-│   ├── convert/       # PGN conversion utilities
-│   └── train/         # ML training pipeline
-├── docs/              # Documentation
-└── pyproject.toml     # Project configuration
++------------------+     +------------------+     +------------------+
+|  Human Games     | --> |  Neural Network  | --> |  Move Prediction |
+|  (Lichess)       |     |  (CNN + FC)      |     |  (2104 classes)  |
++------------------+     +------------------+     +------------------+
 ```
 
-**Modular design** enables independent package development and testing
+Train on millions of human chess positions to predict the next move.
 
 ---
 
-# Play Package - Interactive Chess
+# Methodology
 
-**Features:**
-- Human vs Bot gameplay
-- Bot vs Bot matches
-- Multiple difficulty levels
-- Real-time move validation
+## Data Pipeline
 
-**Supported Engines:**
-- Stockfish (advanced)
-- LCZero (neural network-based)
-- Random bot (testing)
-
-**Interfaces:**
-- GUI (pygame-based)
-- CLI (terminal-based)
-
----
-
-# Convert Package - Data Pipeline
-
-**Purpose:** Transform raw PGN chess data into ML-ready format
-
-**Capabilities:**
-- Combine multiple PGN files
-- Parse chess notation
-- Extract game metadata
-- Export to CSV format
-
-**Use Case:** Prepare training datasets from online chess databases
-
----
-
-# Train Package - ML Infrastructure
-
-**Dataset Management:**
-- Automated Lichess data fetching
-- Game snapshot processing
-- Legal move generation
-- Statistical analysis
-
-**Training Pipeline:**
-- Neural network architecture
-- Custom dataset loaders
-- Training configuration
-- Model evaluation tools
-
----
-
-# Technical Implementation
-
-**Core Technologies:**
-- Python 3.11+
-- Chess engine integration (Stockfish, LCZero)
-- SQLite for data management
-- PyTorch for ML training
-- Pygame for GUI
-
-**Code Quality:**
-- Pre-commit hooks (ruff, black, isort, mypy)
-- Comprehensive test coverage
-- Type hints throughout
-- Modular architecture
-
----
-
-# Development Workflow
-
-```bash
-# Setup
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-pre-commit install
-
-# Run application
-python -m packages.play.src.main
-
-# Run tests
-pytest packages/*/tests/ -v
-
-# Code quality
-pre-commit run --all-files
+```
+  +----------------+
+  | Lichess Server |
+  | (PGN.zst files)|
+  +-------+--------+
+          | HTTP download
+          v
+  +-------+--------+
+  | Zstd Decompress|
+  +-------+--------+
+          | Split by game
+          v
+  +-------+--------+      +------------------+
+  |   raw_games    |----->| game_statistics  |
+  | (full PGN text)|      | (elo, result)    |
+  +-------+--------+      +------------------+
+          | Parse moves
+          v
+  +-------+--------+
+  | game_snapshots |
+  | (fen + move)   |
+  +-------+--------+
+          | Encode tensors
+          v
+  +-------+--------+
+  | PyTorch Dataset|
+  | (board, meta)  |
+  +----------------+
 ```
 
 ---
 
-# Challenges & Solutions
+# Methodology
 
-**Challenge:** Multiple chess engine integration
-**Solution:** Abstract player interface with engine-specific implementations
+## Database Schema
 
-**Challenge:** Large dataset processing
-**Solution:** Incremental processing with SQLite backend
-
-**Challenge:** Maintaining code quality across packages
-**Solution:** Automated pre-commit hooks and comprehensive testing
+```
++------------------+       +------------------+       +------------------+
+|  file_metadata   |       |    raw_games     |       | game_statistics  |
++------------------+       +------------------+       +------------------+
+| id (PK)          |<--+   | id (PK)          |<----->| id (PK)          |
+| url              |   +---| file_id (FK)     |       | raw_game_id (FK) |
+| filename         |       | pgn              |       | white_elo        |
+| games            |       | processed        |       | black_elo        |
+| size_gb          |       +------------------+       | result           |
+| processed        |               |                  | time_control     |
++------------------+               |                  | opening          |
+                                   | 1:N              | eco              |
+                                   v                  +------------------+
+                          +------------------+
+                          | game_snapshots   |
+                          +------------------+
+                          | id (PK)          |
+                          | raw_game_id (FK) |
+                          | move_number      |
+                          | turn             |
+                          | move             |
+                          | fen              |
+                          +------------------+
+```
 
 ---
 
-# Results & Achievements
+# Methodology
 
-- Fully functional chess game with multiple engines
-- Automated data processing pipeline
-- ML training infrastructure ready for model development
-- Comprehensive test coverage
-- Clean, maintainable codebase
+## Neural Network Architecture
 
-**Future Work:**
-- Complete neural network training
-- Additional chess engines
-- Enhanced UI features
-- Performance optimizations
+```
+                 +----------------+
+   Board  -----> | Conv Layers    |
+  (12,8,8)       | 6x Conv2d(64)  |
+                 | 8x8 kernel     |
+                 +----------------+
+                         |
+                         v
+                 +----------------+
+                 | Flatten (4096) |
+                 +----------------+
+                         |
+Metadata (4) ------------+
+                         |
+                         v
+                 +----------------------------+
+                 | FC Layers (4100->512->32)  |
+                 +----------------------------+
+                         |
+                         v
+                 +----------------------------+
+                 | Move Head (32->2104)       |
+                 | Softmax                    |
+                 +----------------------------+
+```
 
 ---
 
-# Demo
+# Methodology
 
-**Live demonstration of:**
-1. Chess gameplay (GUI/CLI)
-2. PGN file processing
-3. Dataset preparation
-4. ML training pipeline
+## Output: Move Encoding
+
+```
+2104 possible moves indexed by:
+  - Start square (0-63)
+  - End square (0-63)
+  - Promotion piece (N, B, R, Q)
+
+Move prediction = classification over 2104 classes
+```
+
+---
+
+# Experiments
+
+## Dataset
+
+- **Source**: Lichess open database
+- **Games**: Human vs. human rated games
+- **Positions**: Each game -> multiple snapshots (1 per move)
+- **Size**: [TODO: number of games/positions]
+
+---
+
+# Experiments
+
+## Data Split
+
+| Split | Percentage |
+|-------|------------|
+| Training | 80% |
+| Validation | 10% |
+| Test | 10% |
+
+---
+
+# Experiments
+
+## Training Setup
+
+| Setting | Value |
+|---------|-------|
+| Loss Function | CrossEntropyLoss |
+| Optimizer | Adam |
+| Hyperparameters | learning_rate, decay, beta1, beta2 |
+| Search Method | Random Search |
+
+---
+
+# Experiments
+
+## Baselines
+
+| Method | Description |
+|--------|-------------|
+| **Random** | Uniform random over legal moves |
+| **Popular Move** | Most common move in training set |
+| **Enia (Ours)** | CNN + FC neural network |
+
+---
+
+# Experiments
+
+## Evaluation Metrics
+
+- **Top-1 Accuracy**: Predicted move = actual move
+- **Top-5 Accuracy**: Actual move in top 5 predictions
+- **Cross-Entropy Loss**: Training convergence
+
+---
+
+# Experiments
+
+## Results
+
+[TODO: Add training curves]
+
+| Metric | Value |
+|--------|-------|
+| Training Loss | [TODO] |
+| Validation Loss | [TODO] |
+| Top-1 Accuracy | [TODO] |
+| Top-5 Accuracy | [TODO] |
+
+---
+
+# Experiments
+
+## Comparison to Baselines
+
+| Method | Top-1 Accuracy |
+|--------|----------------|
+| Random | ~0.03% (1/30 legal moves avg) |
+| Popular Move | [TODO] |
+| **Enia (Ours)** | [TODO] |
+
+---
+
+# Conclusions
+
+## Summary
+
+- Built end-to-end pipeline: Lichess -> SQLite -> PyTorch
+- CNN architecture for spatial pattern recognition
+- Supervised learning to predict human moves
+
+---
+
+# Conclusions
+
+## Limitations
+
+- Dataset size constraints
+- Computational resources
+- No modeling of player skill level
+
+---
+
+# Conclusions
+
+## Future Work
+
+- Larger models (transformers)
+- Rating-specific models
+- More training data
+- Data augmentation (board flipping)
 
 ---
 
@@ -248,7 +350,6 @@ pre-commit run --all-files
 
 # Questions?
 
-**Human Chessbot**
-A complete chess AI development platform
+**Enia**: Human-Like Chess Engine
 
-Thank you!
+Ethan Gee & Nate Stott
