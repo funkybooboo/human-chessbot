@@ -37,8 +37,8 @@ class NeuralNetwork(nn.Module):
         )
 
         # here we split into two heads to handle move and auxilary predictions separately
-        self.move_head = nn.Sequential(nn.Linear(32, 2104), nn.Softmax(dim=1))
-        self.auxiliary_head = nn.Sequential(nn.Linear(32, 2104), nn.Softmax(dim=1))
+        self.move_head = nn.Sequential(nn.Linear(32, 2104))
+        self.auxiliary_head = nn.Sequential(nn.Linear(32, 2104))
 
     def forward(self, metadata: torch.Tensor, board: torch.Tensor):
         board = self.convolution(board)

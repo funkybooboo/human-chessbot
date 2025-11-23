@@ -1,4 +1,4 @@
-This report presents the development and evaluation of Human-Chessbot, a neural network-based chess engine designed to play chess in a human-like manner. Unlike traditional chess engines that prioritize optimal play, this project focuses on creating an AI that mimics human decision-making patterns and playing styles.
-// TODO: Add summary of key findings and results
-// TODO: Add summary of methodology  
+This report presents the development and evaluation of Human-Chessbot, a neural network-based chess engine designed to play chess in a human-like manner. While conventional chess engines have achieved superhuman performance by prioritizing optimal play, their non-human-like strategies limit their effectiveness as training tools for human players. This project addresses this gap by creating an AI that mimics human decision-making, including plausible errors and stylistic nuances. By training a neural network on a large dataset of human games from Lichess, our model learns to predict the moves of human players at various skill levels. This work builds upon the MAIA project but aims to create a more computationally efficient model, comparable in size to Stockfish, making it accessible on standard hardware. The significance of this research lies in the exploration of human-aligned AI, with potential applications in creating more effective and engaging AI-based training systems for a variety of domains.
+/ TODO: Add summary of key findings and results
+// TODO: Add summary of methodology
 // TODO: Add significance of the work

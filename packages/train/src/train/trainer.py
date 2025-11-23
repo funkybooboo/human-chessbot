@@ -56,7 +56,7 @@ class Trainer:
         # Model
         self.model = model
         self.criterion = nn.CrossEntropyLoss()
-        self.valid_moves_criterion = nn.BCEWithLogitsLoss()
+        self.valid_criterion = nn.BCEWithLogitsLoss()
 
         # stable parameters
         self.num_epochs: int = hyperparameters["num_epochs"]
@@ -89,7 +89,7 @@ class Trainer:
         # Move model and criterion to the device
         self.model.to(self.device)
         self.criterion = self.criterion.to(self.device)
-        self.valid_moves_criterion = self.valid_moves_criterion.to(self.device)
+        self.valid_criterion = self.valid_criterion.to(self.device)
 
         fill_database_with_snapshots(
             snapshots_threshold=total_instances, max_size_gb=database_info["max_size_gb"]
@@ -186,15 +186,34 @@ class Trainer:
                 metadata = metadata.to(self.device, non_blocking=non_blocking)
                 board = board.to(self.device, non_blocking=non_blocking)
                 chosen_move = chosen_move.to(self.device, non_blocking=non_blocking)
-                valid_moves = valid_moves.to(self.device, non_blocking=non_blocking)
+                valid_moves = valid_moves.to(self.device, non_blocking=non_blocking).float()
 
                 optimizer.zero_grad()
                 predicted_chosen, predicted_valid = self.model(metadata, board)
 
                 # calculate loss
                 move_loss = self.criterion(predicted_chosen, chosen_move)
-                valid_loss = self.valid_moves_criterion(predicted_valid, valid_moves)
+                valid_loss = self.valid_criterion(predicted_valid, valid_moves)
                 loss = move_loss + valid_loss
+
+                # calculate accuracy
+                _, predicted_move_indices = torch.max(predicted_chosen.data, 1)
+                move_accuracy = (
+                    (predicted_move_indices == chosen_move).sum().item() / chosen_move.size(0)
+                ) * 100
+
+                valid_preds = (torch.sigmoid(predicted_valid) > 0.5).float()
+                valid_accuracy = (
+                    (valid_preds == valid_moves).sum().item() / valid_moves.numel()
+                ) * 100
+
+                print(
+                    f"Total Loss: {loss.item():.4f} | "
+                    f"Move Loss: {move_loss.item():.4f} | "
+                    f"Move Acc: {move_accuracy:.2f}% | "
+                    f"Legal Loss: {valid_loss.item():.4f} | "
+                    f"Legal Acc: {valid_accuracy:.2f}%"
+                )
 
                 loss.backward()
                 optimizer.step()
