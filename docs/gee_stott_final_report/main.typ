@@ -103,20 +103,14 @@
 = Introduction
 #include "sections/introduction.typ"
 
-= Background and Related Work
+= Related Work
 #include "sections/background.typ"
 
-= Methodology
+= Proposed Method
 #include "sections/methodology.typ"
 
-= Implementation
-#include "sections/implementation.typ"
-
-= Results and Evaluation
+= Experiments
 #include "sections/results.typ"
-
-= Discussion
-#include "sections/discussion.typ"
 
 = Conclusion and Future Work
 #include "sections/conclusion.typ"
@@ -126,8 +120,3 @@
 #set par(first-line-indent: 0pt, hanging-indent: 0.25in)
 #set text(size: 9pt)
 #include "sections/references.typ"
-
-// Appendices (if needed for IEEE conference papers)
-#colbreak()
-= Appendices
-#include "sections/appendices.typ"

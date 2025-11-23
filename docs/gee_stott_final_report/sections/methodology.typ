@@ -17,25 +17,6 @@ To make this data usable we stored the players elos, which is a measure of their
 // TODO: Explain raw_games, game_snapshots, legal_moves tables
 // TODO: Indexing and optimization decisions
 
-== Dataset Statistics
-
-We trained our model off of 823,000 games from January to May of 2013. These games were played by a wide breadth of players in a variety of states. The original maia model was split into 9 separate models split apart by elo ranges of 100 (e.g. 1100-1200) this limited the models generalizability and so we trained our model on one complete dataset to increase access. Exanding from 1100-1900 to 700-2500 to further increase access.
-
- #figure(
-    image("elo-distribution.png"),
-    caption: "Spread of the elos present in the training set."
-)
-
-One other key difference is the fact that both iterations of the maia paper are unable to play chess openings as they don't have any knowledge of the first 10 moves. This is a profound limitation as the opening is one of the key areas where players struggle within a game. So knowing this we choose to include the first 10 moves to increase the understanding of openings.
-
-We also didn't limit the model to just the blitz games as we wanted to increase the overall variability in the games that the model was capable of representing. We introduced this noise as it gives a far more holistic view of human players. This was useful as blitz games only show up a small portion of the data and we want to show all human play.
-
-#figure(
-    image("time_control_distribution.png"),
-    caption: "Time Control Splits of the games from Jan-May of 2013"
-)
-
-
 == Neural Network Architecture
 
 The neural network architecture consists of three main components: a convolutional backbone for processing board states, a fully connected network for feature extraction, and dual output heads for move prediction and auxiliary tasks.
