@@ -89,7 +89,8 @@ style: |
 - Goal: Predict what move a **human** would make
 
 **Rylee**
-- asdf
+- Maia is a **large complex model** that takes a **lots of compute power** to train and run
+- Goal: Get about the **same accuracy** but train and run on a **raspberry pi** 😎
 
 ---
 
@@ -101,7 +102,8 @@ style: |
 - **Research**: Model human decision-making in games
 
 **Rylee**
-- asdf
+- Playing chess on edge devices
+- Maia can't play openings
 
 ---
 
@@ -180,19 +182,19 @@ Metadata (4) ------------+
                  +----------------------------+
 ```
 
-| Setting | Value |
-| ------- | ----- |
-| Loss Function | CrossEntropyLoss |
-| Optimizer | Adam |
+| Setting         | Value                              |
+|-----------------|------------------------------------|
+| Loss Function   | CrossEntropyLoss                   |
+| Optimizer       | Adam                               |
 | Hyperparameters | learning_rate, decay, beta1, beta2 |
-| Search Method | Random Search |
+| Search Method   | Random Search                      |
 
 ---
 
 # Experiments - Dataset
 
 * **Source:** Lichess Open Database
-* **Games:** Human vs. human rated games
+* **Games:** Human rated games
 * **Positions:** Each game produces multiple board snapshots (one per move)
 * **Scope:** 1.6 million games -> 25 million snapshots
 * **Action Space:** 2,104 legal move classes
@@ -202,7 +204,7 @@ Metadata (4) ------------+
 # Experiments - Data Split
 
 | Split      | Percentage | Snapshots      |
-| ---------- | ---------- | -------------- |
+|------------|------------|----------------|
 | Training   | 80%        | **20,000,000** |
 | Validation | 10%        | **2,500,000**  |
 | Test       | 10%        | **2,500,000**  |
@@ -211,32 +213,32 @@ Metadata (4) ------------+
 
 # Experiments - Baselines
 
-| Method            | Description                                        | Accuracy |
-| ----------------- | -------------------------------------------------- | -------- |
-| **Random**        | Uniform random choice among all legal moves        | **0%**   |
-| **Random Forest** | Classic ML baseline using handcrafted features     | **13%**  |
-| **Stockfish 15**  | Strong traditional engine (anchor baseline)        | **40%**  |
-| **Leela 4200**    | High-strength neural chess engine (anchor baseline)| **44%**  |
-| **Maia1 1500**    | Human-aligned prediction model (anchor baseline)   | **51%**  |
-| **Rylee (Ours)**  | CNN + fully connected network for move prediction  | **0%**   |
+| Method            | Description                                         |
+|-------------------|-----------------------------------------------------|
+| **Random**        | Uniform random choice among all legal moves         |
+| **Random Forest** | Classic ML baseline using handcrafted features      |
+| **Stockfish 15**  | Strong traditional engine (anchor baseline)         |
+| **Leela 4200**    | High-strength neural chess engine (anchor baseline) |
+| **Maia1 1500**    | Human-aligned prediction model (anchor baseline)    |
 
 ---
 
 # Experiments - Evaluation Metrics
 
 - **Top-1 Accuracy**: Predicted move = actual move
-- **Top-5 Accuracy**: Actual move in top 5 predictions
-- **Cross-Entropy Loss**: Training convergence
 
 ---
 
 # Experiments - Comparisons
 
-| Method | Top-1 Accuracy |
-|--------|----------------|
-| Random | ~0.03% (1/30 legal moves avg) |
-| Popular Move | [TODO] |
-| **Rylee (Ours)** | [TODO] |
+| Method            | Top-1 Accuracy |
+|-------------------|----------------|
+| **Random**        | **6%**         |
+| **Random Forest** | **13%**        |
+| **Stockfish 15**  | **40%**        |
+| **Leela 4200**    | **44%**        |
+| **Maia1 1500**    | **51%**        |
+| **Rylee (Ours)**  | **46%**        |
 
 ---
 
@@ -244,29 +246,25 @@ Metadata (4) ------------+
 
 [TODO: Add training curves]
 
-| Metric | Value |
-|--------|-------|
-| Training Loss | [TODO] |
+| Metric          | Value  |
+|-----------------|--------|
+| Training Loss   | [TODO] |
 | Validation Loss | [TODO] |
-| Top-1 Accuracy | [TODO] |
-| Top-5 Accuracy | [TODO] |
-
----
-
-# Conclusions - Limitations
-
-- Dataset size constraints
-- Computational resources
-- No modeling of player skill level
+| Top-1 Accuracy  | [TODO] |
+| Top-5 Accuracy  | [TODO] |
 
 ---
 
 # Conclusions - Future Work
 
-- Larger models (transformers)
-- Rating-specific models
 - More training data
+- More computational resources
+- Larger models
 - Data augmentation (board flipping)
+- Elo predictor
+- Human vs Bot discriminator
+- GAN implementation
+- Blunder detection
 
 ---
 
