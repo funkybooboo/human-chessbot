@@ -65,7 +65,7 @@ style: |
 
 <!-- _class: lead -->
 
-# Enia
+# Rylee
 ## A Human-Like Chess Engine
 
 **Ethan Gee & Nate Stott**
@@ -81,29 +81,31 @@ style: |
 
 ---
 
-# Introduction
+# Introduction - Problem Definition
 
-## Problem Definition
-
+**Maia**
 - Traditional chess engines (Stockfish, LC0) play **optimally**
 - They don't play like humans
 - Goal: Predict what move a **human** would make
 
+**Rylee**
+- asdf
+
 ---
 
-# Introduction
+# Introduction - Motivation
 
-## Motivation
-
+**Maia**
 - **Training partners**: Engines at human skill levels
 - **Chess education**: Learn from human-like mistakes
 - **Research**: Model human decision-making in games
 
+**Rylee**
+- asdf
+
 ---
 
-# Methodology
-
-## Approach: Supervised Learning
+# Methodology - Proposed Solution
 
 ```
 +------------------+     +------------------+     +------------------+
@@ -116,9 +118,7 @@ Train on millions of human chess positions to predict the next move.
 
 ---
 
-# Methodology
-
-## Data Pipeline
+# Methodology - Data Pipeline
 
 ```
   +----------------+
@@ -152,40 +152,7 @@ Train on millions of human chess positions to predict the next move.
 
 ---
 
-# Methodology
-
-## Database Schema
-
-```
-+------------------+       +------------------+       +------------------+
-|  file_metadata   |       |    raw_games     |       | game_statistics  |
-+------------------+       +------------------+       +------------------+
-| id (PK)          |<--+   | id (PK)          |<----->| id (PK)          |
-| url              |   +---| file_id (FK)     |       | raw_game_id (FK) |
-| filename         |       | pgn              |       | white_elo        |
-| games            |       | processed        |       | black_elo        |
-| size_gb          |       +------------------+       | result           |
-| processed        |               |                  | time_control     |
-+------------------+               |                  | opening          |
-                                   | 1:N              | eco              |
-                                   v                  +------------------+
-                          +------------------+
-                          | game_snapshots   |
-                          +------------------+
-                          | id (PK)          |
-                          | raw_game_id (FK) |
-                          | move_number      |
-                          | turn             |
-                          | move             |
-                          | fen              |
-                          +------------------+
-```
-
----
-
-# Methodology
-
-## Neural Network Architecture
+# Methodology - ML Models
 
 ```
                  +----------------+
@@ -213,52 +180,8 @@ Metadata (4) ------------+
                  +----------------------------+
 ```
 
----
-
-# Methodology
-
-## Output: Move Encoding
-
-```
-2104 possible moves indexed by:
-  - Start square (0-63)
-  - End square (0-63)
-  - Promotion piece (N, B, R, Q)
-
-Move prediction = classification over 2104 classes
-```
-
----
-
-# Experiments
-
-## Dataset
-
-- **Source**: Lichess open database
-- **Games**: Human vs. human rated games
-- **Positions**: Each game -> multiple snapshots (1 per move)
-- **Size**: [TODO: number of games/positions]
-
----
-
-# Experiments
-
-## Data Split
-
-| Split | Percentage |
-|-------|------------|
-| Training | 80% |
-| Validation | 10% |
-| Test | 10% |
-
----
-
-# Experiments
-
-## Training Setup
-
 | Setting | Value |
-|---------|-------|
+| ------- | ----- |
 | Loss Function | CrossEntropyLoss |
 | Optimizer | Adam |
 | Hyperparameters | learning_rate, decay, beta1, beta2 |
@@ -266,21 +189,40 @@ Move prediction = classification over 2104 classes
 
 ---
 
-# Experiments
+# Experiments - Dataset
 
-## Baselines
-
-| Method | Description |
-|--------|-------------|
-| **Random** | Uniform random over legal moves |
-| **Popular Move** | Most common move in training set |
-| **Enia (Ours)** | CNN + FC neural network |
+* **Source:** Lichess Open Database
+* **Games:** Human vs. human rated games
+* **Positions:** Each game produces multiple board snapshots (one per move)
+* **Scope:** 1.6 million games -> 25 million snapshots
+* **Action Space:** 2,104 legal move classes
 
 ---
 
-# Experiments
+# Experiments - Data Split
 
-## Evaluation Metrics
+| Split      | Percentage | Snapshots      |
+| ---------- | ---------- | -------------- |
+| Training   | 80%        | **20,000,000** |
+| Validation | 10%        | **2,500,000**  |
+| Test       | 10%        | **2,500,000**  |
+
+---
+
+# Experiments - Baselines
+
+| Method            | Description                                        | Accuracy |
+| ----------------- | -------------------------------------------------- | -------- |
+| **Random**        | Uniform random choice among all legal moves        | **0%**   |
+| **Random Forest** | Classic ML baseline using handcrafted features     | **13%**  |
+| **Stockfish 15**  | Strong traditional engine (anchor baseline)        | **40%**  |
+| **Leela 4200**    | High-strength neural chess engine (anchor baseline)| **44%**  |
+| **Maia1 1500**    | Human-aligned prediction model (anchor baseline)   | **51%**  |
+| **Rylee (Ours)**  | CNN + fully connected network for move prediction  | **0%**   |
+
+---
+
+# Experiments - Evaluation Metrics
 
 - **Top-1 Accuracy**: Predicted move = actual move
 - **Top-5 Accuracy**: Actual move in top 5 predictions
@@ -288,9 +230,17 @@ Move prediction = classification over 2104 classes
 
 ---
 
-# Experiments
+# Experiments - Comparisons
 
-## Results
+| Method | Top-1 Accuracy |
+|--------|----------------|
+| Random | ~0.03% (1/30 legal moves avg) |
+| Popular Move | [TODO] |
+| **Rylee (Ours)** | [TODO] |
+
+---
+
+# Conclusions - Discussions
 
 [TODO: Add training curves]
 
@@ -303,31 +253,7 @@ Move prediction = classification over 2104 classes
 
 ---
 
-# Experiments
-
-## Comparison to Baselines
-
-| Method | Top-1 Accuracy |
-|--------|----------------|
-| Random | ~0.03% (1/30 legal moves avg) |
-| Popular Move | [TODO] |
-| **Enia (Ours)** | [TODO] |
-
----
-
-# Conclusions
-
-## Summary
-
-- Built end-to-end pipeline: Lichess -> SQLite -> PyTorch
-- CNN architecture for spatial pattern recognition
-- Supervised learning to predict human moves
-
----
-
-# Conclusions
-
-## Limitations
+# Conclusions - Limitations
 
 - Dataset size constraints
 - Computational resources
@@ -335,9 +261,7 @@ Move prediction = classification over 2104 classes
 
 ---
 
-# Conclusions
-
-## Future Work
+# Conclusions - Future Work
 
 - Larger models (transformers)
 - Rating-specific models
@@ -350,6 +274,6 @@ Move prediction = classification over 2104 classes
 
 # Questions?
 
-**Enia**: Human-Like Chess Engine
+**Rylee**: Human-Like Chess Engine
 
 Ethan Gee & Nate Stott

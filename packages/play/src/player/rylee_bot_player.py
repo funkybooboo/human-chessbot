@@ -1,4 +1,4 @@
-"""Enia chess engine player implementation."""
+"""Rylee chess engine player implementation."""
 
 import os
 from pathlib import Path
@@ -6,49 +6,49 @@ from pathlib import Path
 import chess
 import torch
 
-from packages.play.src.constants import ENIA_MODEL_PATH, ENIA_SKILL_LEVEL
+from packages.play.src.constants import Rylee_MODEL_PATH, Rylee_SKILL_LEVEL
 from packages.play.src.player.player import Player, PlayerConfig
 from packages.train.src.dataset.loaders.game_snapshots import GameSnapshotsDataset
 from packages.train.src.dataset.loaders.legal_moves import LegalMovesDataset
 from packages.train.src.models.neural_network import NeuralNetwork
 
 
-class EniaPlayerConfig(PlayerConfig):
+class RyleePlayerConfig(PlayerConfig):
     """
-    Configuration for the Enia neural-network chess engine.
+    Configuration for the Rylee neural-network chess engine.
 
     Attributes:
         name: Player name
         color: True for white, False for black
-        skill_level: Enia skill level (1100–1900 elo score)
+        skill_level: Rylee skill level (1100–1900 elo score)
         wins: Number of wins (tracked automatically)
         losses: Number of losses (tracked automatically)
         model_path: Filesystem path to the .pt model file
     """
 
-    name: str = "Enia"
+    name: str = "Rylee"
     color: bool = True
-    skill_level: int = ENIA_SKILL_LEVEL
-    model_path: str = ENIA_MODEL_PATH
+    skill_level: int = Rylee_SKILL_LEVEL
+    model_path: str = Rylee_MODEL_PATH
 
 
-class EniaPlayer(Player):
+class RyleePlayer(Player):
     """
-    Chess bot powered by the Enia neural-network engine.
+    Chess bot powered by the Rylee neural-network engine.
 
     Uses a neural network trained on chess games to predict moves.
     The model takes board position, ELO ratings, and turn indicator as input
     and outputs a probability distribution over 2104 possible moves.
     """
 
-    def __init__(self, config: EniaPlayerConfig) -> None:
+    def __init__(self, config: RyleePlayerConfig) -> None:
         super().__init__(config)
 
         self.skill_level = config.skill_level
         self.model_path = str(Path(os.path.expanduser(config.model_path)).resolve())
 
         if not os.path.exists(self.model_path):
-            raise FileNotFoundError(f"Enia model not found at: {self.model_path}")
+            raise FileNotFoundError(f"Rylee model not found at: {self.model_path}")
 
         # Determine device
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -62,7 +62,7 @@ class EniaPlayer(Player):
         self.legal_moves_dataset: LegalMovesDataset | None = LegalMovesDataset()
 
         print(
-            f"Initialized Enia player '{config.name}' "
+            f"Initialized Rylee player '{config.name}' "
             f"(skill={self.skill_level}, model='{self.model_path}', device={self.device})"
         )
 
@@ -93,19 +93,19 @@ class EniaPlayer(Player):
 
     def get_move(self, board: chess.Board) -> chess.Move | None:
         """
-        Generate a move using the Enia NN engine.
+        Generate a move using the Rylee NN engine.
         """
         if board.turn != self.config.color:
             return None
 
         if self.model is None:
-            print("ERROR: Enia model is not loaded.")
+            print("ERROR: Rylee model is not loaded.")
             return None
 
         try:
             return self._predict_move(board)
         except Exception as e:
-            print(f"ERROR during Enia evaluation: {e}")
+            print(f"ERROR during Rylee evaluation: {e}")
             return None
 
     def _predict_move(self, board: chess.Board) -> chess.Move | None:
@@ -178,7 +178,7 @@ class EniaPlayer(Player):
         """Unload the model (NN engines do not require engine shutdown)."""
         self.model = None
         self.legal_moves_dataset = None
-        print(f"Unloaded Enia model for player '{self.config.name}'")
+        print(f"Unloaded Rylee model for player '{self.config.name}'")
 
     def __del__(self) -> None:
         self.close()

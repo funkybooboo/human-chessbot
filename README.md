@@ -1,4 +1,4 @@
-# Human Chessbot
+# Rylee - The Human-like Chessbot
 
 Chess application suite with multiple engines, data processing tools, and ML training utilities.
 
