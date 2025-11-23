@@ -8,7 +8,7 @@ style: |
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
   section.lead {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ccccff 0%, #a754fbff 100%);
     color: white;
     text-align: center;
   }
@@ -26,7 +26,7 @@ style: |
     margin-top: 1em;
   }
   strong {
-    color: #667eea;
+    color: #7777ea;
   }
   code {
     background-color: #2c3e50;
@@ -181,13 +181,15 @@ Metadata (4) ------------+
                  | Softmax                    |
                  +----------------------------+
 ```
+---
 
-| Setting         | Value                              |
-|-----------------|------------------------------------|
-| Loss Function   | CrossEntropyLoss                   |
-| Optimizer       | Adam                               |
-| Hyperparameters | learning_rate, decay, beta1, beta2 |
-| Search Method   | Random Search                      |
+| Setting          | Value                              |
+|------------------|------------------------------------|
+| Chosen Move Loss | CrossEntropyLoss                   |
+| Valid Moves Loss | BCE with LogitsLoss                |
+| Optimizer        | Adam                               |
+| Hyperparameters  | learning_rate, decay, beta1, beta2 |
+| Search Method    | Random Search                      |
 
 ---
 
@@ -196,8 +198,9 @@ Metadata (4) ------------+
 * **Source:** Lichess Open Database
 * **Games:** Human rated games
 * **Positions:** Each game produces multiple board snapshots (one per move)
-* **Scope:** 1.6 million games -> 25 million snapshots
+* **Scope:** 860,000 million games -> 25 million snapshots
 * **Action Space:** 2,104 legal move classes
+* **Legal Moves**: Indexes of Legal Moves from a given board state
 
 ---
 
@@ -227,8 +230,6 @@ Metadata (4) ------------+
 
 - **Top-1 Accuracy**: Predicted move = actual move
 
----
-
 # Experiments - Comparisons
 
 | Method            | Top-1 Accuracy |
@@ -243,8 +244,6 @@ Metadata (4) ------------+
 ---
 
 # Conclusions - Discussions
-
-[TODO: Add training curves]
 
 | Metric          | Value  |
 |-----------------|--------|
