@@ -1,16 +1,9 @@
 // Introduction section
 
-== Motivation
+Since the 1940s, chess-playing programs, or "chessbots," have evolved to surpass the capabilities of the most skilled human players. These bots are now integral to modern chess training, with players globally using them to refine their skills. However, a significant disparity exists between the strategies employed by traditional chessbots and human players. Human chess is characterized by the use of heuristics, intuition, and pattern recognition. In contrast, conventional chessbots rely on brute-force computation, analyzing vast numbers of potential future board states to select the move that maximizes their probability of winning.
 
-// TODO: Explain why human-like chess AI is interesting/important
-// TODO: Discuss limitations of traditional chess engines
-// TODO: Explain potential applications
+This computational superiority creates an imbalance in human-computer matches, where the bot's expansive memory and processing power provide a decisive advantage. To mitigate this, lower-level bots are often programmed to introduce deliberate errors, resulting in an unnatural and often confusing experience for the human player. This presents a paradox: while chessbots dominate the game, their non-human-like mode of play limits their effectiveness as a learning tool for humans.
 
-== Project Goals
+This project addresses the challenge of creating a more "human-like" chessbot. Our work builds upon the research of McIlroy-Young et al. on the MAIA models, which were trained using supervised learning to emulate human decision-making, a departure from the reinforcement learning approach common to engines like AlphaZero. While MAIA demonstrated strong performance in predicting human moves, its reliance on the large and resource-intensive AlphaZero architecture limits its practical application. Conversely, Stockfish, a significantly smaller engine, achieves comparable performance to AlphaZero, indicating that model size does not scale linearly with performance.
 
-// TODO: List main objectives of the project
-// TODO: Define what "human-like" play means in this context
-
-== Report Organization
-
-This report is organized as follows: Section 2 provides background on chess engines and related work, Section 3 describes the methodology used to develop the system, Section 4 details the implementation, Section 5 presents results and evaluation, Section 6 discusses findings and limitations, and Section 7 concludes with future work directions.
+The primary objective of this project is to develop a chessbot that not only plays like a human but is also computationally efficient enough to run on standard consumer hardware. We aim to achieve a level of human-like play comparable to the MAIA models but with a model deployable to edge devices. To this end, we will utilize the Lichess Dataset, a comprehensive collection of human chess games and player ratings, which is the same dataset employed in the training of MAIA. This work contributes to the growing field of human-aligned AI by exploring the trade-offs between model size, performance, and human-like behavior in the domain of chess.

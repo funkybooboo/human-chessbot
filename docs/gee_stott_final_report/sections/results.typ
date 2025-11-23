@@ -1,11 +1,5 @@
 // Results and Evaluation section
 
-== Dataset Statistics
-
-// TODO: Number of games processed
-// TODO: Number of positions extracted
-// TODO: Distribution of game outcomes
-// TODO: Rating distribution
 
 == Training Results
 
