@@ -13,10 +13,8 @@ from packages.train.src.constants import (
     EPOCH_INFO_FILE_NAME,
     FINAL_SAVES_DIR,
 )
-from packages.train.src.dataset.fillers.fill_snapshots_and_statistics import (
-    fill_database_with_snapshots,
-)
 from packages.train.src.dataset.loaders.game_snapshots import GameSnapshotsDataset
+from packages.train.src.dataset.pipeline import pipeline
 
 
 def make_directory(directory_name):
@@ -91,9 +89,7 @@ class Trainer:
         self.criterion = self.criterion.to(self.device)
         self.valid_criterion = self.valid_criterion.to(self.device)
 
-        fill_database_with_snapshots(
-            snapshots_threshold=total_instances, max_size_gb=database_info["max_size_gb"]
-        )
+        pipeline()
 
         data_split = database_info["data_split"]
         start_index = 0
