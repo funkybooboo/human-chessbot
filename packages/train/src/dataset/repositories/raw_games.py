@@ -123,6 +123,32 @@ def fetch_raw_games(file_id: int | None = None) -> list[RawGame]:
     return [_row_to_raw_game(row) for row in rows]
 
 
+def get_raw_snapshots_batch(offset: int, batch_size: int) -> list[tuple]:
+    """Get a batch of raw snapshot data for processing.
+
+    Args:
+        offset: Starting offset for the query
+        batch_size: Number of rows to fetch
+
+    Returns:
+        List of tuples: (id, fen, move, turn, white_elo, black_elo, result)
+    """
+    with sqlite3.connect(DB_FILE) as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT gs.id, gs.fen, gs.move, gs.turn,
+                   gst.white_elo, gst.black_elo, gst.result
+            FROM game_snapshots gs
+            JOIN game_statistics gst ON gs.raw_game_id = gst.raw_game_id
+            ORDER BY gs.id
+            LIMIT ? OFFSET ?
+            """,
+            (batch_size, offset),
+        )
+        return cur.fetchall()
+
+
 def fetch_unprocessed_raw_games(file_id: int | None = None) -> Iterator[RawGame]:
     """Yield RawGame objects that have not yet been processed into snapshots."""
     conn = sqlite3.connect(DB_FILE)

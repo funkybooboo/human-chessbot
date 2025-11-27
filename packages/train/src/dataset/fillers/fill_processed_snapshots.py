@@ -3,22 +3,25 @@
 from packages.train.src.constants import DEFAULT_BATCH_SIZE, DEFAULT_PRINT_INTERVAL
 from packages.train.src.dataset.processers.processed_snapshots import ProcessedSnapshotsProcessor
 from packages.train.src.dataset.repositories.database import initialize_database
+from packages.train.src.dataset.repositories.game_snapshots import count_snapshots
 from packages.train.src.dataset.repositories.processed_snapshots import (
-    get_raw_snapshots_batch,
-    get_total_snapshots,
+    count_processed_snapshots,
     save_processed_snapshots,
 )
+from packages.train.src.dataset.repositories.raw_games import get_raw_snapshots_batch
 
 
 def fill_processed_snapshots(
     batch_size: int = DEFAULT_BATCH_SIZE,
     print_interval: int = DEFAULT_PRINT_INTERVAL,
+    max_snapshots: int | None = None,
 ):
-    """Process all raw game snapshots and populate the processed_snapshots table.
+    """Process raw game snapshots and populate the processed_snapshots table.
 
     Args:
         batch_size: Number of snapshots to process per batch
         print_interval: Interval for progress printing
+        max_snapshots: Maximum number of snapshots to process (None for all available)
     """
     initialize_database()
     processor = ProcessedSnapshotsProcessor()
@@ -26,16 +29,27 @@ def fill_processed_snapshots(
     print("Starting to fill processed_snapshots table...")
 
     # Get total count for progress
-    total_snapshots = get_total_snapshots()
+    total_snapshots = count_snapshots()
 
-    print(f"Total snapshots to process: {total_snapshots}")
+    # Determine target number of snapshots to process
+    target_snapshots = (
+        min(total_snapshots, max_snapshots) if max_snapshots is not None else total_snapshots
+    )
+
+    print(f"Total snapshots available: {total_snapshots}")
+    print(f"Target snapshots to process: {target_snapshots}")
+
+    # Get starting point - continue from last processed snapshot
+    last_processed_id = count_processed_snapshots()
+    offset = last_processed_id
+
+    print(f"Starting from snapshot: {offset + 1}")
 
     processed_count = 0
     last_print = 0
 
     # Process in batches
-    offset = 0
-    while offset < total_snapshots:
+    while offset < target_snapshots:
         rows = get_raw_snapshots_batch(offset, batch_size)
 
         if not rows:

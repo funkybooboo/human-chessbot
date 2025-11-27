@@ -89,7 +89,7 @@ class Trainer:
         self.criterion = self.criterion.to(self.device)
         self.valid_criterion = self.valid_criterion.to(self.device)
 
-        pipeline()
+        pipeline(total_instances, database_info["max_size_gb"])
 
         data_split = database_info["data_split"]
         start_index = 0
