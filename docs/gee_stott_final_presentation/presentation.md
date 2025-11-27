@@ -88,7 +88,7 @@ style: |
 - They don't play like humans
 - Goal: Predict what move a **human** would make
 
-**Rylee**
+**Rylee** - All the above AND
 - Maia is a **large complex model** that takes a **lots of compute power** to train and run
 - Goal: Get about the **same accuracy** but train and run on a **raspberry pi** 😎
 
@@ -101,7 +101,7 @@ style: |
 - **Chess education**: Learn from human-like mistakes
 - **Research**: Model human decision-making in games
 
-**Rylee**
+**Rylee** - all the above AND
 - Playing chess on edge devices
 - Maia can't play openings
 
