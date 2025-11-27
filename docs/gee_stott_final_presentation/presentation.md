@@ -61,6 +61,11 @@ style: |
     color: #7f8c8d;
     font-weight: bold;
   }
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
 ---
 
 <!-- _class: lead -->
@@ -88,7 +93,7 @@ style: |
 - They don't play like humans
 - Goal: Predict what move a **human** would make
 
-**Rylee**
+**Rylee** - All the above AND
 - Maia is a **large complex model** that takes a **lots of compute power** to train and run
 - Goal: Get about the **same accuracy** but train and run on a **raspberry pi** 😎
 
@@ -101,7 +106,7 @@ style: |
 - **Chess education**: Learn from human-like mistakes
 - **Research**: Model human decision-making in games
 
-**Rylee**
+**Rylee** - all the above AND
 - Playing chess on edge devices
 - Maia can't play openings
 
@@ -109,7 +114,7 @@ style: |
 
 # Methodology - Proposed Solution
 
-```
+```txt
 +------------------+     +------------------+     +------------------+
 |  Human Games     | --> |  Neural Network  | --> |  Move Prediction |
 |  (Lichess)       |     |  (CNN + FC)      |     |  (2104 classes)  |
@@ -120,80 +125,53 @@ Train on millions of human chess positions to predict the next move.
 
 ---
 
-# Methodology - Data Pipeline
+# Methodology - Theories
 
-```
-  +----------------+
-  | Lichess Server |
-  | (PGN.zst files)|
-  +-------+--------+
-          | HTTP download
-          v
-  +-------+--------+
-  | Zstd Decompress|
-  +-------+--------+
-          | Split by game
-          v
-  +-------+--------+      +------------------+
-  |   raw_games    |----->| game_statistics  |
-  | (full PGN text)|      | (elo, result)    |
-  +-------+--------+      +------------------+
-          | Parse moves
-          v
-  +-------+--------+
-  | game_snapshots |
-  | (fen + move)   |
-  +-------+--------+
-          | Encode tensors
-          v
-  +-------+--------+
-  | PyTorch Dataset|
-  | (board, meta)  |
-  +----------------+
-```
+
 
 ---
 
 # Methodology - ML Models
 
-```
-                 +----------------+
-   Board  -----> | Conv Layers    |
-  (12,8,8)       | 6x Conv2d(64)  |
-                 | 8x8 kernel     |
-                 +----------------+
-                         |
-                         v
-                 +----------------+
-                 | Flatten (4096) |
-                 +----------------+
-                         |
-Metadata (4) ------------+
-                         |
-                         v
-                 +----------------------------+
-                 | FC Layers (4100->512->32)  |
-                 +----------------------------+
-                         |
-                         v
-                 +----------------------------+
-                 | Move Head (32->2104)       |
-                 | Softmax                    |
-                 +----------------------------+
-```
----
+<div class="columns">
+<div>
 
-| Setting          | Value                              |
-|------------------|------------------------------------|
-| Chosen Move Loss | CrossEntropyLoss                   |
-| Valid Moves Loss | BCE with LogitsLoss                |
-| Optimizer        | Adam                               |
-| Hyperparameters  | learning_rate, decay, beta1, beta2 |
-| Search Method    | Random Search                      |
+### Data Pipeline
+- **Download**: .zst files from Lichess
+- **Extract**: PGNs
+- **Split**: PGNs into individual games
+- **FEN snapshots**: Convert to board states
+- **Extract metadata**: ELO, result
+- **Encode**: One-hot encode snapshots
+
+</div>
+<div>
+
+### Neural Network Architecture
+- **Input**: Board(12x8x8) + Metadata(4)
+- **ConvBlock**: 6x64 @ 8x8, ReLU
+- **Flatten**: 4096 + Meta(4)
+- **Fully Connected**: 4100 -> 512 -> 32
+- **Heads**:
+  - MoveHead: 32 -> 2104
+  - AuxHead: 32 -> 2104
+
+### Training Settings
+- **Chosen Move Loss**: CrossEntropyLoss
+- **Valid Moves Loss**: BCE with LogitsLoss
+- **Optimizer**: Adam
+- **Hyperparameters**: learning_rate, decay, beta1, beta2
+- **Search Method**: Random Search
+
+</div>
+</div>
 
 ---
 
 # Experiments - Dataset
+
+<div class="columns">
+<div>
 
 * **Source:** Lichess Open Database
 * **Games:** Human rated games
@@ -202,15 +180,17 @@ Metadata (4) ------------+
 * **Action Space:** 2,104 legal move classes
 * **Legal Moves**: Indexes of Legal Moves from a given board state
 
----
-
-# Experiments - Data Split
+</div>
+<div>
 
 | Split      | Percentage | Snapshots      |
 |------------|------------|----------------|
 | Training   | 80%        | **20,000,000** |
 | Validation | 10%        | **2,500,000**  |
 | Test       | 10%        | **2,500,000**  |
+
+</div>
+</div>
 
 ---
 

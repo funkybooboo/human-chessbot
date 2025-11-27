@@ -222,19 +222,20 @@ class Trainer:
             self._update_epoch_csv(epoch)
         self._save_model(auto_save=False)
 
-    def _dataset_loss(self, dataloader: DataLoader) -> tuple[float, float]:
+    def _dataset_loss(self, dataloader: DataLoader) -> tuple[float, float, float]:
         """
-        Computes the loss and accuracy of the model for a given dataloader.
+        Computes the loss, top-1 accuracy, and top-5 accuracy of the model for a given dataloader.
 
         Args:
             dataloader (DataLoader): The DataLoader to evaluate the model on.
 
         Returns:
-            tuple: A tuple containing the average loss and accuracy.
+            tuple: A tuple containing the average loss, top-1 accuracy, and top-5 accuracy.
         """
 
         total_loss = 0.0
-        correct_moves = 0
+        correct_moves_top1 = 0
+        correct_moves_top5 = 0
 
         self.model.eval()
         non_blocking = self.device.type == "cuda"
@@ -251,16 +252,23 @@ class Trainer:
                 loss = move_loss
                 total_loss += loss.item()
 
-                # Only calculate the accuracy of moves
-                _, predicted_moves = torch.max(predicted_moves.data, 1)
-                correct_moves += (predicted_moves == chosen_move).sum().item()
+                # Calculate top-1 accuracy
+                _, predicted_moves_top1 = torch.max(predicted_moves.data, 1)
+                correct_moves_top1 += (predicted_moves_top1 == chosen_move).sum().item()
+
+                # Calculate top-5 accuracy
+                _, predicted_moves_top5 = torch.topk(predicted_moves.data, k=5, dim=1)
+                correct_moves_top5 += (
+                    (predicted_moves_top5 == chosen_move.unsqueeze(1)).any(dim=1).sum().item()
+                )
 
         avg_loss = total_loss / len(dataloader.dataset)
-        accuracy = 100 * correct_moves / len(dataloader.dataset)
+        top1_accuracy = 100 * correct_moves_top1 / len(dataloader.dataset)
+        top5_accuracy = 100 * correct_moves_top5 / len(dataloader.dataset)
 
         self.model.train()
 
-        return avg_loss, accuracy
+        return avg_loss, top1_accuracy, top5_accuracy
 
     def randomize_hyperparameters(self):
         """
@@ -300,7 +308,7 @@ class Trainer:
             )
             self.train()
             self._save_model()
-            avg_val_loss, _ = self._dataset_loss(self.val_dataloader)
+            avg_val_loss, _, _ = self._dataset_loss(self.val_dataloader)
             if avg_val_loss < best_val_loss:
                 best_val_loss = avg_val_loss
                 best_hyperparameters = {
@@ -344,7 +352,8 @@ class Trainer:
         Updates a CSV file with training and validation metrics for a model.
 
         This method writes performance metrics, including training loss, training
-        accuracy, validation loss, and validation accuracy, along with hyperparameters
+        top-1 accuracy, training top-5 accuracy, validation loss, validation top-1
+        accuracy, and validation top-5 accuracy, along with hyperparameters
         and the timestamp to a CSV file. If the file does not exist, it creates the
         file and writes the appropriate headers.
 
@@ -353,21 +362,26 @@ class Trainer:
         """
         csv_path = self.final_save + self.model_name + "/" + CHECK_POINT_INFO_FILE_NAME
 
-        train_loss, train_accuracy = self._dataset_loss(self.train_dataloader)
-        val_loss, val_accuracy = self._dataset_loss(self.val_dataloader)
+        train_loss, train_top1_accuracy, train_top5_accuracy = self._dataset_loss(
+            self.train_dataloader
+        )
+        val_loss, val_top1_accuracy, val_top5_accuracy = self._dataset_loss(self.val_dataloader)
 
         print(
-            f"Train Loss: {train_loss:.4f}, Train Acc: {train_accuracy}, Val Loss: {val_loss:.4f}, Val Acc: {val_accuracy:.2f}%"
+            f"Train Loss: {train_loss:.4f}, Train Top-1 Acc: {train_top1_accuracy:.2f}%, Train Top-5 Acc: {train_top5_accuracy:.2f}% | "
+            f"Val Loss: {val_loss:.4f}, Val Top-1 Acc: {val_top1_accuracy:.2f}%, Val Top-5 Acc: {val_top5_accuracy:.2f}%"
         )
 
         # check if csv exists and if not create it and the associated headers
         if not os.path.exists(csv_path):
-            header = "time_stamp,train_loss,train_accuracy,val_loss,val_accuracy\n"
+            header = "time_stamp,train_loss,train_top1_accuracy,train_top5_accuracy,val_loss,val_top1_accuracy,val_top5_accuracy\n"
             with open(csv_path, "w") as file:
                 file.write(header)
 
         with open(csv_path, "a") as file:
-            file.write(f"{timestamp},{train_loss},{train_accuracy},{val_loss},{val_accuracy}\n")
+            file.write(
+                f"{timestamp},{train_loss},{train_top1_accuracy},{train_top5_accuracy},{val_loss},{val_top1_accuracy},{val_top5_accuracy}\n"
+            )
 
         print(f"Wrote {timestamp} info to {csv_path}")
 
@@ -375,9 +389,9 @@ class Trainer:
         """
         Updates the epoch data in a CSV file with the training and validation statistics.
 
-        This method computes the training and validation loss and accuracy for the current
-        epoch, records them, and appends the data into a CSV file. If the CSV file does not
-        exist, it is created along with the appropriate headers.
+        This method computes the training and validation loss, top-1 accuracy, and top-5
+        accuracy for the current epoch, records them, and appends the data into a CSV file.
+        If the CSV file does not exist, it is created along with the appropriate headers.
 
         If the CSV file exists, the function appends the computed epoch details to it. The method
         also prints a summary of the epoch's performance statistics.
@@ -387,21 +401,26 @@ class Trainer:
         """
         csv_path = self.final_save + self.model_name + "/" + EPOCH_INFO_FILE_NAME
 
-        train_loss, train_accuracy = self._dataset_loss(self.train_dataloader)
-        val_loss, val_accuracy = self._dataset_loss(self.val_dataloader)
+        train_loss, train_top1_accuracy, train_top5_accuracy = self._dataset_loss(
+            self.train_dataloader
+        )
+        val_loss, val_top1_accuracy, val_top5_accuracy = self._dataset_loss(self.val_dataloader)
 
         print(
-            f"Epoch: {epoch}/{self.num_epochs} | Train Loss: {train_loss:.4f}, Train Acc: {train_accuracy}, Val Loss: {val_loss:.4f}, Val Acc: {val_accuracy:.2f}%"
+            f"Epoch: {epoch}/{self.num_epochs} | Train Loss: {train_loss:.4f}, Train Top-1 Acc: {train_top1_accuracy:.2f}%, Train Top-5 Acc: {train_top5_accuracy:.2f}% | "
+            f"Val Loss: {val_loss:.4f}, Val Top-1 Acc: {val_top1_accuracy:.2f}%, Val Top-5 Acc: {val_top5_accuracy:.2f}%"
         )
 
         # check if csv exists and if not create it and the associated headers
         if not os.path.exists(csv_path):
-            header = "epoch,train_loss,train_accuracy,val_loss,val_accuracy\n"
+            header = "epoch,train_loss,train_top1_accuracy,train_top5_accuracy,val_loss,val_top1_accuracy,val_top5_accuracy\n"
             with open(csv_path, "w") as file:
                 file.write(header)
 
         with open(csv_path, "a") as file:
-            file.write(f"{epoch},{train_loss},{train_accuracy},{val_loss},{val_accuracy}\n")
+            file.write(
+                f"{epoch},{train_loss},{train_top1_accuracy},{train_top5_accuracy},{val_loss},{val_top1_accuracy},{val_top5_accuracy}\n"
+            )
         print(f"Wrote {epoch} info to {csv_path}")
 
         # save model
